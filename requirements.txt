@@ -1,0 +1,11 @@
+# Core dependencies
+streamlit
+openai
+python-dotenv
+
+# Google Sheets integration
+gspread
+oauth2client
+
+# Additional utilities
+requests

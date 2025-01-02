@@ -1,0 +1,51 @@
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment and Secrets
+*.env
+.env.*
+!.env.template  # Exception for template file
+.secrets.toml
+config.json
+secrets/
+
+# OAuth Credentials
+new-year-trivia-game-*.json  # Google OAuth credentials
+*oauth*.json
+credentials*.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Streamlit
+.streamlit/
+secrets.toml
+
+# Distribution
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+logs/
+*.sqlite
+*.db
+
+# System
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Project specific
+data/
+output/
+temp/
+local/
