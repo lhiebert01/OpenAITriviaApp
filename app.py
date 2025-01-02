@@ -8,9 +8,20 @@ import time
 import json
 
 
-# Load environment variables and initialize OpenAI client
-load_dotenv(override=True)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Load environment variables and initialize OpenAI client - FOR LOCAL DESKTOP DEVELOPMENT 
+#load_dotenv(override=True)
+#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+# Initialize OpenAI client using environment variable or Streamlit secrets
+def get_openai_key():
+    """Get OpenAI API key from environment or Streamlit secrets"""
+    if os.getenv("OPENAI_API_KEY"):  # Local development
+        return os.getenv("OPENAI_API_KEY")
+    else:  # Streamlit Cloud
+        return st.secrets["openai"]["OPENAI_API_KEY"]
+
+# Initialize OpenAI client
+client = OpenAI(api_key=get_openai_key())
 
 # Set page configuration
 st.set_page_config(
