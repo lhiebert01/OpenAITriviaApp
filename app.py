@@ -164,84 +164,25 @@ def load_and_resize_image(image_path, width=None):
         return None
     
 def is_running_on_streamlit():
-    """Enhanced check if the code is running on Streamlit Cloud"""
+    """Check if the code is running on Streamlit Cloud"""
     import streamlit as st
     import os
     
     # Multiple checks for Streamlit environment
     checks = [
-        # Check for Streamlit Cloud environment variable
-        "STREAMLIT_SHARING" in os.environ,
-        
-        # Check for Streamlit secrets
         hasattr(st, "secrets"),
-        
-        # Check for specific Streamlit Cloud paths
-        os.path.exists("/.streamlit"),
-        
-        # Check for Streamlit Cloud-specific environment variables
         any(key.startswith("STREAMLIT_") for key in os.environ),
-        
-        # Check for Cloud deployment indicator
         not os.path.exists("new-year-trivia-game-932d8241aa4e.json")
     ]
-    
-    # Debug output
-    st.write("Environment Detection Debug:")
-    st.write(f"- Streamlit sharing env: {'STREAMLIT_SHARING' in os.environ}")
-    st.write(f"- Has st.secrets: {hasattr(st, 'secrets')}")
-    st.write(f"- Streamlit path exists: {os.path.exists('/.streamlit')}")
-    st.write(f"- Has Streamlit env vars: {any(key.startswith('STREAMLIT_') for key in os.environ)}")
-    st.write(f"- Local creds missing: {not os.path.exists('new-year-trivia-game-932d8241aa4e.json')}")
-    
-    # If any checks indicate Streamlit Cloud, return True
-    is_cloud = any(checks)
-    st.write(f"Final determination: {'Streamlit Cloud' if is_cloud else 'Local'}")
-    
-    return is_cloud
+    return any(checks)
 
-def clean_private_key(key):
-    """Clean and validate private key format"""
-    import streamlit as st
-    
-    try:
-        # Remove any extra quotes
-        key = key.strip('"').strip("'")
         
-        # Split into lines and clean each line
-        lines = [line.strip() for line in key.split('\n')]
-        
-        # Filter out empty lines
-        lines = [line for line in lines if line]
-        
-        # Verify key structure
-        if not lines[0].startswith("-----BEGIN PRIVATE KEY-----"):
-            st.error("Debug: Missing BEGIN marker in key")
-            return None
-            
-        if not lines[-1].endswith("-----END PRIVATE KEY-----"):
-            st.error("Debug: Missing END marker in key")
-            return None
-            
-        # Join lines with proper newlines
-        clean_key = '\n'.join(lines)
-        
-        # Ensure key ends with newline
-        if not clean_key.endswith('\n'):
-            clean_key += '\n'
-            
-        st.write("Debug: Key structure validation passed")
-        return clean_key
-        
-    except Exception as e:
-        st.error(f"Error cleaning private key: {str(e)}")
-        return None
 
-def get_google_creds():
-    """Get Google credentials based on environment"""
+def authenticate_google_sheets():
+    """Authenticate with Google Sheets API and return sheet object"""
+    import gspread
     import streamlit as st
     from oauth2client.service_account import ServiceAccountCredentials
-    import json
     
     # Define scope
     scope = [
@@ -249,192 +190,65 @@ def get_google_creds():
         "https://www.googleapis.com/auth/drive"
     ]
     
-    if is_running_on_streamlit():
-        st.write("Debug: Getting Streamlit Cloud credentials")
-        try:
+    try:
+        if is_running_on_streamlit():
             # Get credentials from Streamlit secrets
             creds_dict = dict(st.secrets["gcp_service_account"])
             
-            # Handle private key
+            # Clean private key formatting if needed
             if "private_key" in creds_dict:
                 pk = creds_dict["private_key"]
-                st.write("Debug: Found private key in credentials")
-                
-                # Clean and validate key
-                cleaned_key = clean_private_key(pk)
-                if cleaned_key is None:
-                    st.error("Debug: Failed to clean private key")
-                    return None
-                    
-                # Update credentials with cleaned key
-                creds_dict["private_key"] = cleaned_key
-                
-                # Debug key structure
-                key_lines = cleaned_key.split('\n')
-                st.write(f"Debug: Key has {len(key_lines)} lines")
-                st.write(f"Debug: First line: {key_lines[0]}")
-                st.write(f"Debug: Last line: {key_lines[-2]}")  # -2 because -1 might be empty due to final newline
-                
-            else:
-                st.error("Debug: No private_key found in credentials")
-                return None
+                if isinstance(pk, str):
+                    pk = pk.replace('\\n', '\n').strip()
+                    if not pk.endswith('\n'):
+                        pk += '\n'
+                    creds_dict["private_key"] = pk
             
-            try:
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
-                st.write("Debug: Successfully created credentials object")
-                return creds
-            except Exception as e:
-                st.error(f"Error creating credentials object: {str(e)}")
-                # Print more details about the error
-                import traceback
-                st.error(f"Detailed error: {traceback.format_exc()}")
-                return None
-                
-        except Exception as e:
-            st.error(f"Error getting Streamlit credentials: {str(e)}")
-            return None
-    else:
-        st.write("Debug: Getting local credentials")
-        try:
-            return ServiceAccountCredentials.from_json_keyfile_name(
+            # Create credentials
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            
+        else:
+            # Local development
+            creds = ServiceAccountCredentials.from_json_keyfile_name(
                 "new-year-trivia-game-932d8241aa4e.json", 
                 scope
             )
-        except Exception as e:
-            st.write(f"Error getting local credentials: {str(e)}")
-            return None
-        
-    
-def get_spreadsheet_url():
-    """Get spreadsheet URL based on environment"""
-    if is_running_on_streamlit():
-        return st.secrets["google_sheets"]["url"]
-    else:
-        return "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
-
-
-def authenticate_google_sheets():
-    """Authenticate with Google Sheets API and return sheet object"""
-    import gspread
-    import streamlit as st
-    
-    try:
-        # Get credentials using enhanced function
-        creds = get_google_creds()
-        if not creds:
-            st.error("Failed to get credentials")
-            return None
             
-        # Initialize gspread client
+        # Initialize client and get sheet
         client = gspread.authorize(creds)
+        sheet_url = (st.secrets["google_sheets"]["url"] 
+                    if is_running_on_streamlit() 
+                    else "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0")
         
-        # Get appropriate sheet URL
-        if is_running_on_streamlit():
-            sheet_url = st.secrets["google_sheets"]["url"]
-        else:
-            sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
+        spreadsheet = client.open_by_url(sheet_url)
+        return spreadsheet.sheet1
         
-        # Open spreadsheet
-        try:
-            spreadsheet = client.open_by_url(sheet_url)
-            sheet = spreadsheet.sheet1
-            st.write("Debug: Successfully opened spreadsheet")
-            return sheet
-        except Exception as e:
-            st.error(f"Error opening spreadsheet: {str(e)}")
-            return None
-            
     except Exception as e:
-        st.error(f"Authentication error: {str(e)}")
-        return None                
-    except Exception as e:
-        st.error(f"Debug: Global error in authentication: {str(e)}")
         return None
     
-
-def verify_streamlit_secrets():
-    """Verify Streamlit secrets configuration"""
-    import streamlit as st
-    
-    st.write("Debugging Streamlit Secrets Configuration:")
-    
-    # Check if running on Streamlit
-    if not is_running_on_streamlit():
-        st.write("Running locally - skipping secrets verification")
-        return
-    
-    # Check main secret sections
-    if "gcp_service_account" not in st.secrets:
-        st.error("Missing gcp_service_account section in secrets")
-        return
-    
-    if "google_sheets" not in st.secrets:
-        st.error("Missing google_sheets section in secrets")
-        return
-    
-    # Verify GCP service account fields
-    gcp_fields = [
-        "type", "project_id", "private_key_id", "private_key",
-        "client_email", "client_id", "auth_uri", "token_uri",
-        "auth_provider_x509_cert_url", "client_x509_cert_url"
-    ]
-    
-    missing_gcp = []
-    for field in gcp_fields:
-        if field not in st.secrets.gcp_service_account:
-            missing_gcp.append(field)
-    
-    if missing_gcp:
-        st.error(f"Missing GCP fields: {missing_gcp}")
-    else:
-        st.write("All required GCP fields present")
-    
-    # Verify Google Sheets URL
-    if "url" not in st.secrets.google_sheets:
-        st.error("Missing Google Sheets URL in secrets")
-    else:
-        sheet_url = st.secrets.google_sheets.url
-        st.write(f"Sheet URL configured: {sheet_url[:30]}...")  # Show start of URL
-        
-    # Verify private key format
-    if "private_key" in st.secrets.gcp_service_account:
-        pk = st.secrets.gcp_service_account.private_key
-        if "BEGIN PRIVATE KEY" not in pk or "END PRIVATE KEY" not in pk:
-            st.error("Private key may not be properly formatted")
             
-
 def load_leaderboard(sheet):
     """Load leaderboard data from Google Sheet"""
     if sheet is None:
         return {}
-        
     try:
         data = sheet.get_all_records()
         return {row["Name"]: row["Score"] for row in data}
-    except Exception as e:
-        st.error(f"Error loading leaderboard: {str(e)}")
-        print(f"Detailed leaderboard error: {str(e)}")  # For debugging
+    except Exception:
         return {}
 
 def save_leaderboard(sheet, leaderboard):
     """Save leaderboard data to Google Sheet"""
     if sheet is None:
         return
-        
     try:
-        # Clear existing data
         sheet.clear()
-        
-        # Add headers
         sheet.append_row(["Name", "Score"])
-        
-        # Add sorted data
         for name, score in sorted(leaderboard.items(), key=lambda x: x[1], reverse=True):
             sheet.append_row([name, score])
-            
-    except Exception as e:
-        st.error(f"Error saving leaderboard: {str(e)}")
-        print(f"Detailed save error: {str(e)}")  # For debugging
+    except Exception:
+        pass  # Silently handle errors to avoid disrupting gameplay
+    
         
 def generate_trivia_question():
     prompt = """Create an interesting educational and fund trivia question with four high-quality multiple choice answers. 
@@ -602,9 +416,6 @@ def main():
     # Collapsible Leaderboard
     st.sidebar.markdown("---")
     with st.sidebar.expander("📊 View Leaderboard", expanded=False):
-        
-        verify_streamlit_secrets()
-        
         try:
             sheet = authenticate_google_sheets()
             if sheet:
@@ -614,8 +425,10 @@ def main():
                     st.write(f"{i}. {name}: {score} points")
             else:
                 st.info("Leaderboard temporarily unavailable")
-        except Exception as e:
+        except Exception:
             st.info("Leaderboard temporarily unavailable")
+    
+    
 
     if st.session_state.game_active and st.session_state.questions_asked < 10:
         if not st.session_state.current_question:

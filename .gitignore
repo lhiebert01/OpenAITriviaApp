@@ -1,18 +1,21 @@
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-
 # Environment variables and secrets
 .env
 *.env
 .env.*
 !.env.template
 
-# Google API credentials
+# Google API credentials and keys
 *.json
 new-year-trivia-game-932d8241aa4e.json
+privatekeyTOML.txt
+format_json_key.py
+jsontotomlkeyformatter.py
+
+# Backup and debug files
+*backup*
+appbackup*.py
+appwithdebugcode.py
+*debug*.py
 
 # Python
 __pycache__/
@@ -47,13 +50,9 @@ ENV/
 *.swp
 *.swo
 
-# Backup files
-*backup*
-appbackup*.py
-
 # Operating System
 .DS_Store
 Thumbs.db
 
-# Streamlit specific
+# Streamlit secrets
 .streamlit/secrets.toml
