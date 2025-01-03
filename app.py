@@ -200,6 +200,43 @@ def is_running_on_streamlit():
     
     return is_cloud
 
+def clean_private_key(key):
+    """Clean and validate private key format"""
+    import streamlit as st
+    
+    try:
+        # Remove any extra quotes
+        key = key.strip('"').strip("'")
+        
+        # Split into lines and clean each line
+        lines = [line.strip() for line in key.split('\n')]
+        
+        # Filter out empty lines
+        lines = [line for line in lines if line]
+        
+        # Verify key structure
+        if not lines[0].startswith("-----BEGIN PRIVATE KEY-----"):
+            st.error("Debug: Missing BEGIN marker in key")
+            return None
+            
+        if not lines[-1].endswith("-----END PRIVATE KEY-----"):
+            st.error("Debug: Missing END marker in key")
+            return None
+            
+        # Join lines with proper newlines
+        clean_key = '\n'.join(lines)
+        
+        # Ensure key ends with newline
+        if not clean_key.endswith('\n'):
+            clean_key += '\n'
+            
+        st.write("Debug: Key structure validation passed")
+        return clean_key
+        
+    except Exception as e:
+        st.error(f"Error cleaning private key: {str(e)}")
+        return None
+
 def get_google_creds():
     """Get Google credentials based on environment"""
     import streamlit as st
@@ -218,28 +255,29 @@ def get_google_creds():
             # Get credentials from Streamlit secrets
             creds_dict = dict(st.secrets["gcp_service_account"])
             
-            # Debug: Check private key format
+            # Handle private key
             if "private_key" in creds_dict:
                 pk = creds_dict["private_key"]
-                st.write("Debug: Private key starts with:", pk[:20] + "...")
+                st.write("Debug: Found private key in credentials")
                 
-                # Ensure proper key formatting
-                if not pk.startswith("-----BEGIN PRIVATE KEY-----"):
-                    st.write("Debug: Private key missing BEGIN marker")
-                    # Try to fix common formatting issues
-                    if "\\n" in pk:
-                        pk = pk.replace("\\n", "\n")
-                    if not pk.startswith("-----"):
-                        pk = f"-----BEGIN PRIVATE KEY-----\n{pk}\n-----END PRIVATE KEY-----\n"
-                    creds_dict["private_key"] = pk
+                # Clean and validate key
+                cleaned_key = clean_private_key(pk)
+                if cleaned_key is None:
+                    st.error("Debug: Failed to clean private key")
+                    return None
+                    
+                # Update credentials with cleaned key
+                creds_dict["private_key"] = cleaned_key
+                
+                # Debug key structure
+                key_lines = cleaned_key.split('\n')
+                st.write(f"Debug: Key has {len(key_lines)} lines")
+                st.write(f"Debug: First line: {key_lines[0]}")
+                st.write(f"Debug: Last line: {key_lines[-2]}")  # -2 because -1 might be empty due to final newline
+                
             else:
                 st.error("Debug: No private_key found in credentials")
                 return None
-            
-            # Debug: Print formatted credentials (excluding sensitive data)
-            safe_creds = {k: ("..." if k in ["private_key", "private_key_id"] else v) 
-                         for k, v in creds_dict.items()}
-            st.write("Debug: Credential structure:", json.dumps(safe_creds, indent=2))
             
             try:
                 creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
@@ -247,12 +285,13 @@ def get_google_creds():
                 return creds
             except Exception as e:
                 st.error(f"Error creating credentials object: {str(e)}")
+                # Print more details about the error
+                import traceback
+                st.error(f"Detailed error: {traceback.format_exc()}")
                 return None
                 
         except Exception as e:
             st.error(f"Error getting Streamlit credentials: {str(e)}")
-            if "gcp_service_account" not in st.secrets:
-                st.error("Debug: 'gcp_service_account' not found in secrets")
             return None
     else:
         st.write("Debug: Getting local credentials")
