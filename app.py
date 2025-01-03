@@ -204,6 +204,7 @@ def get_google_creds():
     """Get Google credentials based on environment"""
     import streamlit as st
     from oauth2client.service_account import ServiceAccountCredentials
+    import json
     
     # Define scope
     scope = [
@@ -217,13 +218,41 @@ def get_google_creds():
             # Get credentials from Streamlit secrets
             creds_dict = dict(st.secrets["gcp_service_account"])
             
-            # Clean private key
-            if isinstance(creds_dict.get("private_key"), str):
-                creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+            # Debug: Check private key format
+            if "private_key" in creds_dict:
+                pk = creds_dict["private_key"]
+                st.write("Debug: Private key starts with:", pk[:20] + "...")
+                
+                # Ensure proper key formatting
+                if not pk.startswith("-----BEGIN PRIVATE KEY-----"):
+                    st.write("Debug: Private key missing BEGIN marker")
+                    # Try to fix common formatting issues
+                    if "\\n" in pk:
+                        pk = pk.replace("\\n", "\n")
+                    if not pk.startswith("-----"):
+                        pk = f"-----BEGIN PRIVATE KEY-----\n{pk}\n-----END PRIVATE KEY-----\n"
+                    creds_dict["private_key"] = pk
+            else:
+                st.error("Debug: No private_key found in credentials")
+                return None
             
-            return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            # Debug: Print formatted credentials (excluding sensitive data)
+            safe_creds = {k: ("..." if k in ["private_key", "private_key_id"] else v) 
+                         for k, v in creds_dict.items()}
+            st.write("Debug: Credential structure:", json.dumps(safe_creds, indent=2))
+            
+            try:
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+                st.write("Debug: Successfully created credentials object")
+                return creds
+            except Exception as e:
+                st.error(f"Error creating credentials object: {str(e)}")
+                return None
+                
         except Exception as e:
             st.error(f"Error getting Streamlit credentials: {str(e)}")
+            if "gcp_service_account" not in st.secrets:
+                st.error("Debug: 'gcp_service_account' not found in secrets")
             return None
     else:
         st.write("Debug: Getting local credentials")
@@ -234,7 +263,8 @@ def get_google_creds():
             )
         except Exception as e:
             st.write(f"Error getting local credentials: {str(e)}")
-            return None    
+            return None
+        
     
 def get_spreadsheet_url():
     """Get spreadsheet URL based on environment"""
