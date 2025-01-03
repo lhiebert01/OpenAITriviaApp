@@ -164,31 +164,77 @@ def load_and_resize_image(image_path, width=None):
         return None
     
 def is_running_on_streamlit():
-    """Check if the code is running on Streamlit Cloud"""
-    try:
-        if "STREAMLIT_SHARING" in os.environ:
-            return True
-        return False
-    except:
-        return False
-
-def get_google_creds(scope):
-    """Get credentials based on environment"""
-    try:
-        if is_running_on_streamlit():
-            # Streamlit Cloud: Use secrets
-            gcp_creds = dict(st.secrets["gcp_service_account"])
-            return ServiceAccountCredentials.from_json_keyfile_dict(gcp_creds, scope)
-        else:
-            # Local development: Use JSON file
-            json_path = "new-year-trivia-game-932d8241aa4e.json"
-            if not os.path.exists(json_path):
-                raise FileNotFoundError(f"Credentials file not found: {json_path}")
-            return ServiceAccountCredentials.from_json_keyfile_name(json_path, scope)
-    except Exception as e:
-        st.error(f"Credential setup failed: {str(e)}")
-        return None
+    """Enhanced check if the code is running on Streamlit Cloud"""
+    import streamlit as st
+    import os
     
+    # Multiple checks for Streamlit environment
+    checks = [
+        # Check for Streamlit Cloud environment variable
+        "STREAMLIT_SHARING" in os.environ,
+        
+        # Check for Streamlit secrets
+        hasattr(st, "secrets"),
+        
+        # Check for specific Streamlit Cloud paths
+        os.path.exists("/.streamlit"),
+        
+        # Check for Streamlit Cloud-specific environment variables
+        any(key.startswith("STREAMLIT_") for key in os.environ),
+        
+        # Check for Cloud deployment indicator
+        not os.path.exists("new-year-trivia-game-932d8241aa4e.json")
+    ]
+    
+    # Debug output
+    st.write("Environment Detection Debug:")
+    st.write(f"- Streamlit sharing env: {'STREAMLIT_SHARING' in os.environ}")
+    st.write(f"- Has st.secrets: {hasattr(st, 'secrets')}")
+    st.write(f"- Streamlit path exists: {os.path.exists('/.streamlit')}")
+    st.write(f"- Has Streamlit env vars: {any(key.startswith('STREAMLIT_') for key in os.environ)}")
+    st.write(f"- Local creds missing: {not os.path.exists('new-year-trivia-game-932d8241aa4e.json')}")
+    
+    # If any checks indicate Streamlit Cloud, return True
+    is_cloud = any(checks)
+    st.write(f"Final determination: {'Streamlit Cloud' if is_cloud else 'Local'}")
+    
+    return is_cloud
+
+def get_google_creds():
+    """Get Google credentials based on environment"""
+    import streamlit as st
+    from oauth2client.service_account import ServiceAccountCredentials
+    
+    # Define scope
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
+    if is_running_on_streamlit():
+        st.write("Debug: Getting Streamlit Cloud credentials")
+        try:
+            # Get credentials from Streamlit secrets
+            creds_dict = dict(st.secrets["gcp_service_account"])
+            
+            # Clean private key
+            if isinstance(creds_dict.get("private_key"), str):
+                creds_dict["private_key"] = creds_dict["private_key"].replace('\\n', '\n')
+            
+            return ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+        except Exception as e:
+            st.error(f"Error getting Streamlit credentials: {str(e)}")
+            return None
+    else:
+        st.write("Debug: Getting local credentials")
+        try:
+            return ServiceAccountCredentials.from_json_keyfile_name(
+                "new-year-trivia-game-932d8241aa4e.json", 
+                scope
+            )
+        except Exception as e:
+            st.write(f"Error getting local credentials: {str(e)}")
+            return None    
     
 def get_spreadsheet_url():
     """Get spreadsheet URL based on environment"""
@@ -198,106 +244,44 @@ def get_spreadsheet_url():
         return "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
 
 
-
 def authenticate_google_sheets():
     """Authenticate with Google Sheets API and return sheet object"""
     import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
     import streamlit as st
-    import json
-    
-    # Define scope for Google Sheets API
-    scope = [
-        "https://spreadsheets.google.com/feeds",
-        "https://www.googleapis.com/auth/drive"
-    ]
     
     try:
+        # Get credentials using enhanced function
+        creds = get_google_creds()
+        if not creds:
+            st.error("Failed to get credentials")
+            return None
+            
+        # Initialize gspread client
+        client = gspread.authorize(creds)
+        
+        # Get appropriate sheet URL
         if is_running_on_streamlit():
-            st.write("Debug: Running on Streamlit Cloud")
-            
-            # Verify secrets exist
-            if "gcp_service_account" not in st.secrets:
-                st.error("Debug: gcp_service_account not found in secrets")
-                return None
-                
-            if "google_sheets" not in st.secrets:
-                st.error("Debug: google_sheets configuration not found in secrets")
-                return None
-            
-            # Get credentials from Streamlit secrets
-            credentials_dict = dict(st.secrets["gcp_service_account"])
-            
-            # Debug: Print available keys (without sensitive values)
-            st.write("Debug: Available credential keys:", list(credentials_dict.keys()))
-            
-            # Verify all required fields
-            required_fields = [
-                "type", "project_id", "private_key_id", "private_key",
-                "client_email", "client_id", "auth_uri", "token_uri",
-                "auth_provider_x509_cert_url", "client_x509_cert_url"
-            ]
-            
-            missing_fields = [field for field in required_fields if field not in credentials_dict]
-            if missing_fields:
-                st.error(f"Debug: Missing required fields: {missing_fields}")
-                return None
-            
-            # Clean private key
-            if isinstance(credentials_dict["private_key"], str):
-                credentials_dict["private_key"] = credentials_dict["private_key"].replace('\\n', '\n')
-                st.write("Debug: Private key cleaned")
-            
-            try:
-                # Create credentials object
-                creds = ServiceAccountCredentials.from_json_keyfile_dict(
-                    credentials_dict, scope
-                )
-                st.write("Debug: Credentials created successfully")
-                
-                # Initialize gspread client
-                client = gspread.authorize(creds)
-                st.write("Debug: Client authorized")
-                
-                # Get spreadsheet URL
-                sheet_url = st.secrets["google_sheets"]["url"]
-                st.write(f"Debug: Using sheet URL: {sheet_url[:30]}...")  # Show start of URL
-                
-                # Open spreadsheet
-                try:
-                    spreadsheet = client.open_by_url(sheet_url)
-                    sheet = spreadsheet.sheet1
-                    st.write("Debug: Successfully opened spreadsheet")
-                    return sheet
-                except gspread.exceptions.SpreadsheetNotFound:
-                    st.error("Debug: Spreadsheet not found. Check URL and permissions")
-                    return None
-                except Exception as e:
-                    st.error(f"Debug: Error opening spreadsheet: {str(e)}")
-                    return None
-                    
-            except Exception as e:
-                st.error(f"Debug: Authentication error: {str(e)}")
-                return None
-                
+            sheet_url = st.secrets["google_sheets"]["url"]
         else:
-            st.write("Debug: Running locally")
-            try:
-                creds = ServiceAccountCredentials.from_json_keyfile_name(
-                    "new-year-trivia-game-932d8241aa4e.json", 
-                    scope
-                )
-                client = gspread.authorize(creds)
-                sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
-                spreadsheet = client.open_by_url(sheet_url)
-                return spreadsheet.sheet1
-            except Exception as e:
-                print(f"Local auth error (expected in development): {str(e)}")
-                return None
-                
+            sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
+        
+        # Open spreadsheet
+        try:
+            spreadsheet = client.open_by_url(sheet_url)
+            sheet = spreadsheet.sheet1
+            st.write("Debug: Successfully opened spreadsheet")
+            return sheet
+        except Exception as e:
+            st.error(f"Error opening spreadsheet: {str(e)}")
+            return None
+            
+    except Exception as e:
+        st.error(f"Authentication error: {str(e)}")
+        return None                
     except Exception as e:
         st.error(f"Debug: Global error in authentication: {str(e)}")
         return None
+    
 
 def verify_streamlit_secrets():
     """Verify Streamlit secrets configuration"""
