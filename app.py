@@ -200,42 +200,113 @@ def get_spreadsheet_url():
 
 
 def authenticate_google_sheets():
-    """Authenticate with Google Sheets in any environment"""
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+    """Authenticate with Google Sheets API and return sheet object"""
+    import gspread
+    from oauth2client.service_account import ServiceAccountCredentials
+    import streamlit as st
+    
+    # Define scope for Google Sheets API
+    scope = [
+        "https://spreadsheets.google.com/feeds",
+        "https://www.googleapis.com/auth/drive"
+    ]
+    
     try:
         if is_running_on_streamlit():
-            # Streamlit Cloud environment
-            gcp_creds = dict(st.secrets["gcp_service_account"])
-            creds = ServiceAccountCredentials.from_json_keyfile_dict(gcp_creds, scope)
-            sheet_url = st.secrets["google_sheets"]["url"]
+            # Get credentials from Streamlit secrets
+            credentials_dict = dict(st.secrets["gcp_service_account"])
+            
+            # Ensure all required fields are present
+            required_fields = [
+                "type", "project_id", "private_key_id", "private_key",
+                "client_email", "client_id", "auth_uri", "token_uri",
+                "auth_provider_x509_cert_url", "client_x509_cert_url"
+            ]
+            
+            for field in required_fields:
+                if field not in credentials_dict:
+                    raise KeyError(f"Missing required field in credentials: {field}")
+            
+            # Clean up private key if needed (replace escaped newlines)
+            if isinstance(credentials_dict["private_key"], str):
+                credentials_dict["private_key"] = credentials_dict["private_key"].replace('\\n', '\n')
+            
+            try:
+                # Create credentials object
+                creds = ServiceAccountCredentials.from_json_keyfile_dict(
+                    credentials_dict, scope
+                )
+                
+                # Initialize gspread client
+                client = gspread.authorize(creds)
+                
+                # Get spreadsheet URL from secrets
+                sheet_url = st.secrets["google_sheets"]["url"]
+                
+                # Open spreadsheet and get first sheet
+                spreadsheet = client.open_by_url(sheet_url)
+                sheet = spreadsheet.sheet1
+                
+                return sheet
+                
+            except Exception as e:
+                st.error(f"Failed to authenticate with Google Sheets: {str(e)}")
+                print(f"Detailed error: {str(e)}")  # For debugging
+                return None
+                
         else:
-            # Local environment
-            creds = ServiceAccountCredentials.from_json_keyfile_name(
-                "new-year-trivia-game-932d8241aa4e.json", 
-                scope
-            )
-            sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
-        
-        client = gspread.authorize(creds)
-        sheet = client.open_by_url(sheet_url).sheet1
-        return sheet
+            # Local development - use JSON file
+            try:
+                creds = ServiceAccountCredentials.from_json_keyfile_name(
+                    "new-year-trivia-game-932d8241aa4e.json", 
+                    scope
+                )
+                client = gspread.authorize(creds)
+                sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
+                spreadsheet = client.open_by_url(sheet_url)
+                return spreadsheet.sheet1
+                
+            except Exception as e:
+                print(f"Local auth error (expected in development): {str(e)}")
+                return None
+                
     except Exception as e:
-        if is_running_on_streamlit():
-            st.error("Unable to load leaderboard data.")
-        else:
-            # Silently handle local development errors
-            print(f"Local auth error (this is normal in development): {str(e)}")
+        st.error("Failed to initialize Google Sheets authentication")
+        print(f"Authentication initialization error: {str(e)}")  # For debugging
         return None
-    
+
 def load_leaderboard(sheet):
-    data = sheet.get_all_records()
-    return {row["Name"]: row["Score"] for row in data}
+    """Load leaderboard data from Google Sheet"""
+    if sheet is None:
+        return {}
+        
+    try:
+        data = sheet.get_all_records()
+        return {row["Name"]: row["Score"] for row in data}
+    except Exception as e:
+        st.error(f"Error loading leaderboard: {str(e)}")
+        print(f"Detailed leaderboard error: {str(e)}")  # For debugging
+        return {}
 
 def save_leaderboard(sheet, leaderboard):
-    sheet.clear()
-    sheet.append_row(["Name", "Score"])
-    for name, score in sorted(leaderboard.items(), key=lambda x: x[1], reverse=True):
-        sheet.append_row([name, score])
+    """Save leaderboard data to Google Sheet"""
+    if sheet is None:
+        return
+        
+    try:
+        # Clear existing data
+        sheet.clear()
+        
+        # Add headers
+        sheet.append_row(["Name", "Score"])
+        
+        # Add sorted data
+        for name, score in sorted(leaderboard.items(), key=lambda x: x[1], reverse=True):
+            sheet.append_row([name, score])
+            
+    except Exception as e:
+        st.error(f"Error saving leaderboard: {str(e)}")
+        print(f"Detailed save error: {str(e)}")  # For debugging
         
 def generate_trivia_question():
     prompt = """Create an interesting educational and fund trivia question with four high-quality multiple choice answers. 

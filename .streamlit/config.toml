@@ -1,0 +1,19 @@
+[theme]
+primaryColor = "#1E88E5"  # Blue color used in your game title
+backgroundColor = "#FFFFFF"  # White background
+secondaryBackgroundColor = "#F0F2F6"  # Light gray for contrast
+textColor = "#262730"  # Dark text for readability
+
+[server]
+enableXsrfProtection = true
+enableCORS = false
+
+[browser]
+gatherUsageStats = false
+
+[runner]
+fastReruns = true
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = false
