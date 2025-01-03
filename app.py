@@ -204,6 +204,7 @@ def authenticate_google_sheets():
     import gspread
     from oauth2client.service_account import ServiceAccountCredentials
     import streamlit as st
+    import json
     
     # Define scope for Google Sheets API
     scope = [
@@ -213,49 +214,74 @@ def authenticate_google_sheets():
     
     try:
         if is_running_on_streamlit():
+            st.write("Debug: Running on Streamlit Cloud")
+            
+            # Verify secrets exist
+            if "gcp_service_account" not in st.secrets:
+                st.error("Debug: gcp_service_account not found in secrets")
+                return None
+                
+            if "google_sheets" not in st.secrets:
+                st.error("Debug: google_sheets configuration not found in secrets")
+                return None
+            
             # Get credentials from Streamlit secrets
             credentials_dict = dict(st.secrets["gcp_service_account"])
             
-            # Ensure all required fields are present
+            # Debug: Print available keys (without sensitive values)
+            st.write("Debug: Available credential keys:", list(credentials_dict.keys()))
+            
+            # Verify all required fields
             required_fields = [
                 "type", "project_id", "private_key_id", "private_key",
                 "client_email", "client_id", "auth_uri", "token_uri",
                 "auth_provider_x509_cert_url", "client_x509_cert_url"
             ]
             
-            for field in required_fields:
-                if field not in credentials_dict:
-                    raise KeyError(f"Missing required field in credentials: {field}")
+            missing_fields = [field for field in required_fields if field not in credentials_dict]
+            if missing_fields:
+                st.error(f"Debug: Missing required fields: {missing_fields}")
+                return None
             
-            # Clean up private key if needed (replace escaped newlines)
+            # Clean private key
             if isinstance(credentials_dict["private_key"], str):
                 credentials_dict["private_key"] = credentials_dict["private_key"].replace('\\n', '\n')
+                st.write("Debug: Private key cleaned")
             
             try:
                 # Create credentials object
                 creds = ServiceAccountCredentials.from_json_keyfile_dict(
                     credentials_dict, scope
                 )
+                st.write("Debug: Credentials created successfully")
                 
                 # Initialize gspread client
                 client = gspread.authorize(creds)
+                st.write("Debug: Client authorized")
                 
-                # Get spreadsheet URL from secrets
+                # Get spreadsheet URL
                 sheet_url = st.secrets["google_sheets"]["url"]
+                st.write(f"Debug: Using sheet URL: {sheet_url[:30]}...")  # Show start of URL
                 
-                # Open spreadsheet and get first sheet
-                spreadsheet = client.open_by_url(sheet_url)
-                sheet = spreadsheet.sheet1
-                
-                return sheet
-                
+                # Open spreadsheet
+                try:
+                    spreadsheet = client.open_by_url(sheet_url)
+                    sheet = spreadsheet.sheet1
+                    st.write("Debug: Successfully opened spreadsheet")
+                    return sheet
+                except gspread.exceptions.SpreadsheetNotFound:
+                    st.error("Debug: Spreadsheet not found. Check URL and permissions")
+                    return None
+                except Exception as e:
+                    st.error(f"Debug: Error opening spreadsheet: {str(e)}")
+                    return None
+                    
             except Exception as e:
-                st.error(f"Failed to authenticate with Google Sheets: {str(e)}")
-                print(f"Detailed error: {str(e)}")  # For debugging
+                st.error(f"Debug: Authentication error: {str(e)}")
                 return None
                 
         else:
-            # Local development - use JSON file
+            st.write("Debug: Running locally")
             try:
                 creds = ServiceAccountCredentials.from_json_keyfile_name(
                     "new-year-trivia-game-932d8241aa4e.json", 
@@ -265,15 +291,64 @@ def authenticate_google_sheets():
                 sheet_url = "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0"
                 spreadsheet = client.open_by_url(sheet_url)
                 return spreadsheet.sheet1
-                
             except Exception as e:
                 print(f"Local auth error (expected in development): {str(e)}")
                 return None
                 
     except Exception as e:
-        st.error("Failed to initialize Google Sheets authentication")
-        print(f"Authentication initialization error: {str(e)}")  # For debugging
+        st.error(f"Debug: Global error in authentication: {str(e)}")
         return None
+
+def verify_streamlit_secrets():
+    """Verify Streamlit secrets configuration"""
+    import streamlit as st
+    
+    st.write("Debugging Streamlit Secrets Configuration:")
+    
+    # Check if running on Streamlit
+    if not is_running_on_streamlit():
+        st.write("Running locally - skipping secrets verification")
+        return
+    
+    # Check main secret sections
+    if "gcp_service_account" not in st.secrets:
+        st.error("Missing gcp_service_account section in secrets")
+        return
+    
+    if "google_sheets" not in st.secrets:
+        st.error("Missing google_sheets section in secrets")
+        return
+    
+    # Verify GCP service account fields
+    gcp_fields = [
+        "type", "project_id", "private_key_id", "private_key",
+        "client_email", "client_id", "auth_uri", "token_uri",
+        "auth_provider_x509_cert_url", "client_x509_cert_url"
+    ]
+    
+    missing_gcp = []
+    for field in gcp_fields:
+        if field not in st.secrets.gcp_service_account:
+            missing_gcp.append(field)
+    
+    if missing_gcp:
+        st.error(f"Missing GCP fields: {missing_gcp}")
+    else:
+        st.write("All required GCP fields present")
+    
+    # Verify Google Sheets URL
+    if "url" not in st.secrets.google_sheets:
+        st.error("Missing Google Sheets URL in secrets")
+    else:
+        sheet_url = st.secrets.google_sheets.url
+        st.write(f"Sheet URL configured: {sheet_url[:30]}...")  # Show start of URL
+        
+    # Verify private key format
+    if "private_key" in st.secrets.gcp_service_account:
+        pk = st.secrets.gcp_service_account.private_key
+        if "BEGIN PRIVATE KEY" not in pk or "END PRIVATE KEY" not in pk:
+            st.error("Private key may not be properly formatted")
+            
 
 def load_leaderboard(sheet):
     """Load leaderboard data from Google Sheet"""
@@ -474,6 +549,9 @@ def main():
     # Collapsible Leaderboard
     st.sidebar.markdown("---")
     with st.sidebar.expander("📊 View Leaderboard", expanded=False):
+        
+        verify_streamlit_secrets()
+        
         try:
             sheet = authenticate_google_sheets()
             if sheet:
