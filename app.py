@@ -7,11 +7,6 @@ import os
 import time
 import json
 
-
-# Load environment variables and initialize OpenAI client - FOR LOCAL DESKTOP DEVELOPMENT 
-#load_dotenv(override=True)
-#client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
 # Initialize OpenAI client using environment variable or Streamlit secrets
 def get_openai_key():
     """Get OpenAI API key from environment or Streamlit secrets"""
@@ -31,33 +26,152 @@ st.set_page_config(
 )
 
 # Custom CSS for styling
+
+# Replace the entire CSS section with this:
 st.markdown("""
     <style>
+    .main {
+        padding: 0.5rem;
+    }
     
-     .main {
-        padding: 0.5rem;  /* Reduced from 2rem to move everything up */
+    /* Title area with logo */
+    .title-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        margin: 0;
+        padding: 5px 0;
+        width: 100%;
     }
     
     .game-title {
         text-align: center;
         color: #1E88E5;
-        margin: 0;        /* Removed margin to move title up */
-        padding: 5px 0;   /* Added small padding */
+        margin: 0;
+        padding: 0;
         font-size: 2.5rem;
         text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        white-space: nowrap;
     }
     
-    .footer {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background-color: white;
-        padding: 10px 0;
+    .logo-container {
+        width: 95px !important;  /* Reduced from 75px */
+        height: 95px !important; /* Reduced from 75px */
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    
+    .logo-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    
+    .instruction-text {
+        font-size: 2.0rem !important;
+        line-height: 1.2 !important;
+        margin: 0 !important;
+        padding: 10px 0 !important;
+    }
+    
+    .current-topic {
+        font-weight: 600;
+        color: #1E88E5;
+        background: rgba(33, 150, 243, 0.1);
+        padding: 2px 8px;
+        border-radius: 4px;
+        margin: 0 4px;
+    }
+    
+    /* Timer styles */
+    .timer-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 8px;
+        margin: 5px 0;
+        background: rgba(255, 87, 34, 0.05);
+        border-radius: 8px;
+    }
+
+    .timer-display {
+        font-size: 1.2rem;
+        font-weight: bold;
+        color: #FF5722;
+        padding: 5px 10px;
+        border-radius: 4px;
+        min-width: 120px;
         text-align: center;
-        border-top: 1px solid #e5e5e5;
+    }
+
+    .progress-bar {
+        flex-grow: 1;
+        height: 8px;
+        background: #e0e0e0;
+        border-radius: 4px;
+        overflow: hidden;
+        max-width: 300px;
+    }
+
+    .progress-bar-fill {
+        height: 100%;
+        background: #4CAF50;
+        transition: width 0.5s ease-out;
+    }
+
+    .timer-warning .timer-display {
+        color: #f44336;
+        animation: pulse 1s infinite;
+    }
+
+    .timer-warning .progress-bar-fill {
+        background: #f44336;
+    }
+
+    @keyframes pulse {
+        0% { opacity: 1; }
+        50% { opacity: 0.5; }
+        100% { opacity: 1; }
     }
     
+    /* Column alignment */
+    [data-testid="column"] {
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        padding-top: 0 !important;
+        margin-top: 0 !important;
+    }
+    
+    .element-container {
+        margin-top: 0 !important;
+        padding-top: 0 !important;
+    }
+    
+    /* Game controls */
+    .game-controls {
+        margin-top: 0.5rem !important;
+        padding-top: 0.5rem !important;
+        border-top: 1px solid rgba(49, 51, 63, 0.2);
+    }
+    
+    .sidebar .stMarkdown {
+        margin: 0 !important;
+    }
+    
+    .sidebar-title {
+        font-size: 1.1rem !important;
+        font-weight: bold;
+        margin: 0.5rem 0 !important;
+        padding: 0 !important;
+    }
+    
+    /* Buttons */
     .stButton button {
         width: 100%;
         min-height: 60px;
@@ -68,21 +182,13 @@ st.markdown("""
         text-align: left;
         transition: all 0.3s ease;
     }
+    
     .stButton button:hover {
         transform: translateY(-2px);
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
-    .timer {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #FF5722;
-        text-align: center;
-        margin: 5px 0;
-        padding: 5px;
-        background: rgba(255, 87, 34, 0.1);
-        border-radius: 5px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
+    
+    /* Game interface */
     .player-info {
         font-size: 1.2rem;
         background: rgba(33, 150, 243, 0.1);
@@ -91,6 +197,7 @@ st.markdown("""
         margin: 15px 0;
         border: 1px solid rgba(33, 150, 243, 0.2);
     }
+
     .response-area {
         max-height: 200px;
         overflow-y: auto;
@@ -105,13 +212,6 @@ st.markdown("""
         line-height: 1.6;
     }
 
-    
-    .start-button button {
-        background-color: #4CAF50;
-        color: white;
-        font-size: 1.2rem;
-        text-align: center;
-    }
     .question-display {
         font-size: 1.3rem;
         padding: 10px;
@@ -120,6 +220,7 @@ st.markdown("""
         margin: 5px 0;
         border: 1px solid rgba(33, 150, 243, 0.2);
     }
+
     .current-stats {
         background: rgba(33, 150, 243, 0.05);
         padding: 15px;
@@ -128,47 +229,127 @@ st.markdown("""
         text-align: center;
         font-size: 1.1rem;
     }
-    .answer-button button {
-        background-color: #f8f9fa;
-        border: 2px solid #e9ecef;
-        transition: all 0.5s ease;
+    
+    /* Game over section */
+    .game-over-section {
+        background: rgba(76, 175, 80, 0.1);
+        padding: 20px;
+        border-radius: 10px;
+        margin: 20px 0;
+        text-align: center;
+        border: 1px solid rgba(76, 175, 80, 0.2);
     }
-    .answer-button button:hover {
-        background-color: #e9ecef;
-        border-color: #1E88E5;
+
+    .game-over-title {
+        font-size: 2rem;
+        color: #4CAF50;
+        margin-bottom: 15px;
     }
-    .fact-check {
-        background: rgba(255, 255, 255, 0.9);
+
+    .game-over-stats {
+        font-size: 1.2rem;
+        margin: 10px 0;
+        line-height: 1.6;
+    }
+    
+    /* Footer */
+    .footer-section {
+        margin-top: 30px;
+        padding: 20px 0;
+        background: rgba(33, 150, 243, 0.05);
+        border-top: 1px solid rgba(33, 150, 243, 0.1);
+    }
+
+    .footer-content {
+        text-align: center;
+        padding: 10px;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+
+    .footer-image {
+        max-width: 100%;
+        height: auto;
+        margin: 10px 0;
+    }
+    
+    /* Additional controls */
+    .sidebar-controls {
+        background: rgba(33, 150, 243, 0.05);
         padding: 15px;
-        border-radius: 8px;
-        margin-top: 10px;
-        border-left: 4px solid #4CAF50;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    
+    .control-button {
+        margin: 5px 0;
+    }
+    
+    .required-field {
+        color: #f44336;
+        font-size: 0.8rem;
+        margin-top: 2px;
     }
     </style>
 """, unsafe_allow_html=True)
 
+# Initialize session state
+if 'player_name' not in st.session_state:
+    st.session_state.player_name = ""
+if 'topic' not in st.session_state:
+    st.session_state.topic = ""
+if 'questions_asked' not in st.session_state:
+    st.session_state.questions_asked = 0
+if 'total_score' not in st.session_state:
+    st.session_state.total_score = 0
+if 'current_question' not in st.session_state:
+    st.session_state.current_question = None
+if 'game_active' not in st.session_state:
+    st.session_state.game_active = False
+if 'answer_selected' not in st.session_state:
+    st.session_state.answer_selected = False
+if 'feedback' not in st.session_state:
+    st.session_state.feedback = None
+if 'game_length' not in st.session_state:
+    st.session_state.game_length = 10
+# Add this to your session state initializations
+if 'leaderboard_cache' not in st.session_state:
+    st.session_state.leaderboard_cache = None
+if 'last_sheet_load' not in st.session_state:
+    st.session_state.last_sheet_load = None
+# other session state initializations
+if 'sheet_object' not in st.session_state:
+    st.session_state.sheet_object = None
 
-# Load and display images
-def load_and_resize_image(image_path, width=None):
-    """Load an image and optionally resize it"""
+def load_and_resize_image(image_path, width=None, max_size=None):
+    """Load an image and resize it with maximum dimensions"""
     try:
         from PIL import Image
         image = Image.open(image_path)
-        if width:
+        
+        if max_size:
+            # Calculate ratio to maintain aspect ratio
+            ratio = min(max_size[0]/float(image.size[0]), 
+                       max_size[1]/float(image.size[1]))
+            new_size = (int(float(image.size[0])*float(ratio)), 
+                       int(float(image.size[1])*float(ratio)))
+            image = image.resize(new_size, Image.Resampling.LANCZOS)
+            return image
+        elif width:
             ratio = width/float(image.size[0])
             height = int(float(image.size[1])*float(ratio))
             image = image.resize((width, height), Image.Resampling.LANCZOS)
+            return image
         return image
     except Exception as e:
         st.error(f"Error loading image: {str(e)}")
         return None
-    
+
+
+
+
 def is_running_on_streamlit():
     """Check if the code is running on Streamlit Cloud"""
-    import streamlit as st
-    import os
-    
-    # Multiple checks for Streamlit environment
     checks = [
         hasattr(st, "secrets"),
         any(key.startswith("STREAMLIT_") for key in os.environ),
@@ -176,15 +357,14 @@ def is_running_on_streamlit():
     ]
     return any(checks)
 
-        
+
 
 def authenticate_google_sheets():
     """Authenticate with Google Sheets API and return sheet object"""
-    import gspread
-    import streamlit as st
-    from oauth2client.service_account import ServiceAccountCredentials
+    # Check if we have a cached sheet object
+    if st.session_state.sheet_object is not None:
+        return st.session_state.sheet_object
     
-    # Define scope
     scope = [
         "https://spreadsheets.google.com/feeds",
         "https://www.googleapis.com/auth/drive"
@@ -192,10 +372,8 @@ def authenticate_google_sheets():
     
     try:
         if is_running_on_streamlit():
-            # Get credentials from Streamlit secrets
             creds_dict = dict(st.secrets["gcp_service_account"])
             
-            # Clean private key formatting if needed
             if "private_key" in creds_dict:
                 pk = creds_dict["private_key"]
                 if isinstance(pk, str):
@@ -204,87 +382,414 @@ def authenticate_google_sheets():
                         pk += '\n'
                     creds_dict["private_key"] = pk
             
-            # Create credentials
             creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
             
         else:
-            # Local development
             creds = ServiceAccountCredentials.from_json_keyfile_name(
                 "new-year-trivia-game-932d8241aa4e.json", 
                 scope
             )
             
-        # Initialize client and get sheet
         client = gspread.authorize(creds)
         sheet_url = (st.secrets["google_sheets"]["url"] 
                     if is_running_on_streamlit() 
                     else "https://docs.google.com/spreadsheets/d/1vs_JYu7HqmGiVUZjTdiDemVBhj3APV90Z5aa1jt56-g/edit#gid=0")
         
         spreadsheet = client.open_by_url(sheet_url)
-        return spreadsheet.sheet1
+        # Cache the sheet object
+        st.session_state.sheet_object = spreadsheet.sheet1
+        return st.session_state.sheet_object
         
     except Exception as e:
         return None
     
-            
-def load_leaderboard(sheet):
-    """Load leaderboard data from Google Sheet"""
+
+def load_leaderboard(sheet, force_refresh=False):
+    """Load leaderboard data with caching"""
+    from datetime import datetime, timedelta
+    
+    # Check if we have cached data and it's less than 5 minutes old
+    if (not force_refresh and 
+        st.session_state.leaderboard_cache is not None and 
+        st.session_state.last_sheet_load is not None and 
+        datetime.now() - st.session_state.last_sheet_load < timedelta(minutes=5)):
+        return st.session_state.leaderboard_cache
+    
     if sheet is None:
         return {}
+        
     try:
+        # Load from sheet
         data = sheet.get_all_records()
-        return {row["Name"]: row["Score"] for row in data}
-    except Exception:
+        leaderboard = {i: {
+            "name": row["Name"],
+            "score": row["Score"],
+            "topic": row["Topic"],
+            "date": row["Date"],
+            "time": row["Time"],
+            "questions_answered": row["Questions_Answered"],
+            "game_length": row["Game_Length"]
+        } for i, row in enumerate(data)}
+        
+        # Update cache
+        st.session_state.leaderboard_cache = leaderboard
+        st.session_state.last_sheet_load = datetime.now()
+        
+        return leaderboard
+    except Exception as e:
+        print(f"Error loading leaderboard: {str(e)}")
         return {}
 
+
 def save_leaderboard(sheet, leaderboard):
-    """Save leaderboard data to Google Sheet"""
+    """Save leaderboard data to Google Sheet with extended fields and rate limiting"""
     if sheet is None:
         return
+    
+    import time
+    from random import uniform
+    
+    max_retries = 5
+    base_wait = 1  # Base wait time in seconds
+    
+    for attempt in range(max_retries):
+        try:
+            # Clear the sheet and set headers
+            sheet.clear()
+            time.sleep(uniform(1, 2))  # Random delay between 1-2 seconds
+            
+            headers = ["Name", "Score", "Topic", "Date", "Time", 
+                      "Questions_Answered", "Game_Length"]
+            sheet.append_row(headers)
+            time.sleep(uniform(1, 2))  # Random delay between 1-2 seconds
+            
+            # Sort entries by date/time (newest first) and score (highest first)
+            sorted_entries = sorted(
+                leaderboard.values(),
+                key=lambda x: (x["date"], x["time"], -x["score"]),
+                reverse=True
+            )
+            
+            # Append entries with rate limiting
+            for entry in sorted_entries:
+                # Add random delay between writes
+                time.sleep(uniform(0.5, 1))  # Random delay between 0.5-1 seconds
+                
+                sheet.append_row([
+                    entry["name"],
+                    entry["score"],
+                    entry["topic"],
+                    entry["date"],
+                    entry["time"],
+                    entry["questions_answered"],
+                    entry["game_length"]
+                ])
+            
+            return  # Success
+            
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"Error saving leaderboard after {max_retries} attempts: {str(e)}")
+                return
+            
+            # Calculate wait time with exponential backoff
+            wait_time = (2 ** attempt) * base_wait + uniform(0, 1)
+            print(f"Attempt {attempt + 1} failed, waiting {wait_time:.2f} seconds...")
+            time.sleep(wait_time)
+ 
+
+def update_leaderboard_entry(sheet, player_name, score, topic, questions_answered, game_length, force_write=False):
+    """Update leaderboard with local caching"""
     try:
-        sheet.clear()
-        sheet.append_row(["Name", "Score"])
-        for name, score in sorted(leaderboard.items(), key=lambda x: x[1], reverse=True):
-            sheet.append_row([name, score])
-    except Exception:
-        pass  # Silently handle errors to avoid disrupting gameplay
-    
+        from datetime import datetime
+        current_time = datetime.now()
         
-def generate_trivia_question():
-    prompt = """Create an interesting educational and fund trivia question with four high-quality multiple choice answers. 
-    The correct answer should be factually accurate and verifiable. 
-    Do not ask questions about the great wall of china, falmingos or other obscure topics, redundancy and repetition should be avoided.
-    Trivia questions should be different and engaging for a wide audience, no not repeat questions or topic areas for the entire game so each question and category will need to be remembered not to repeat the same topic or question.
-    The questions should vary and not all be about history, architecture, etc, they should be science, technology, and human interest level topics revealing interesting trivia information. 
-    The questions should be challenging and not too easy, but not too hard, and should be fun and engaging. 
-    The question should be about a well-documented, verifiable fact.
-    All answers should be similar in length and style.
-    The correct answer must be factually accurate (verifiable via reliable sources).
-    The wrong answers should be plausible but clearly incorrect.
+        # Format date and time
+        date_str = current_time.strftime("%b %d, %Y")
+        time_str = current_time.strftime("%I:%M %p")
+        
+        # Get cached leaderboard or load if needed
+        leaderboard = st.session_state.leaderboard_cache
+        if leaderboard is None:
+            leaderboard = load_leaderboard(sheet)
+        
+        # Check for duplicate
+        duplicate_exists = any(
+            entry["name"] == player_name and
+            entry["topic"] == topic and
+            entry["score"] == score and
+            entry["date"] == date_str
+            for entry in leaderboard.values()
+        )
+        
+        if not duplicate_exists:
+            # Create new entry
+            new_entry = {
+                "name": player_name,
+                "score": score,
+                "topic": topic,
+                "date": date_str,
+                "time": time_str,
+                "questions_answered": questions_answered,
+                "game_length": game_length
+            }
+            
+            # Add to local cache
+            next_index = max(leaderboard.keys(), default=-1) + 1
+            leaderboard[next_index] = new_entry
+            st.session_state.leaderboard_cache = leaderboard
+            
+            # Only write to sheet if forced (end of game)
+            if force_write and sheet:
+                save_leaderboard_efficient(sheet, leaderboard)
+            
+            return True
+        return False
+        
+    except Exception as e:
+        print(f"Error updating leaderboard: {str(e)}")
+        return False
+
+def save_leaderboard_efficient(sheet, leaderboard):
+    """Efficient single-operation save to Google Sheet"""
+    if sheet is None:
+        return
     
-    Rules for answers:
-    - All answers should be roughly the same length
-    - Wrong answers should be plausible but definitively incorrect
-    - The correct answer must be factually accurate
-    - Include specific details in each answer
+    try:
+        # Prepare all data at once
+        headers = ["Name", "Score", "Topic", "Date", "Time", 
+                  "Questions_Answered", "Game_Length"]
+        
+        # Sort entries
+        sorted_entries = sorted(
+            leaderboard.values(),
+            key=lambda x: (x["date"], x["time"], -x["score"]),
+            reverse=True
+        )
+        
+        # Create all rows at once
+        rows = [headers] + [
+            [
+                entry["name"],
+                entry["score"],
+                entry["topic"],
+                entry["date"],
+                entry["time"],
+                entry["questions_answered"],
+                entry["game_length"]
+            ]
+            for entry in sorted_entries
+        ]
+        
+        # Single batch update operation - FIXED order of arguments
+        sheet.update(values=rows, range_name='A1', value_input_option='RAW')
+        
+    except Exception as e:
+        print(f"Error saving leaderboard: {str(e)}")
+
+def get_topic_rankings(leaderboard, topic):
+    """Get rankings for a specific topic, sorted by score and date"""
+    topic_scores = [
+        (entry["name"], entry["score"], entry["date"], entry["time"])
+        for entry in leaderboard.values()
+        if entry["topic"].lower() == topic.lower()
+    ]
+    # Sort by score (descending) and then by date/time (newest first)
+    return sorted(
+        topic_scores,
+        key=lambda x: (-x[1], x[2], x[3]),
+        reverse=False
+    )
+
+
+def display_game_over(player_name, score, topic, questions_answered, game_length):
+    """Enhanced game over display with updated rankings"""
+    try:
+        sheet = authenticate_google_sheets()
+        if sheet:
+            # Add these lines right here, before update_leaderboard_entry
+            from datetime import datetime
+            current_time = datetime.now()
+            current_date = current_time.strftime("%b %d, %Y")
+            current_time_str = current_time.strftime("%I:%M %p")
+            
+            # Update leaderboard with force_write=True to save to sheet
+            update_leaderboard_entry(
+                sheet, player_name, score, topic, 
+                questions_answered, game_length,
+                force_write=True
+            )
+            
+            # Use cached data for display
+            leaderboard = st.session_state.leaderboard_cache
+            if leaderboard is None:
+                leaderboard = load_leaderboard(sheet)    
+            
+            
+
+        
+            # Calculate rankings
+            sorted_entries = sorted(
+                leaderboard.values(),
+                key=lambda x: (-x["score"], x["date"], x["time"])
+            )
+            
+            overall_rank = next(
+                (i + 1 for i, entry in enumerate(sorted_entries)
+                if entry["name"] == player_name and 
+                entry["score"] == score and
+                entry["topic"] == topic),
+                None
+            )
+            
+            topic_rankings = get_topic_rankings(leaderboard, topic)
+            topic_rank = next(
+                (i + 1 for i, (name, s, _, _) in enumerate(topic_rankings)
+                if name == player_name and s == score),
+                None
+            )
+            
+            # Display results in columns
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                st.markdown(f"""
+                <div class="game-over-section">
+                    <div class="game-over-title">🎉 Game Over!</div>
+                    <div class="game-over-stats">
+                        Final Score: {score}<br>
+                        Player: {player_name}<br>
+                        Topic: {topic}<br>
+                        Questions: {questions_answered}/{game_length}<br>
+                        Overall Rank: #{overall_rank}<br>
+                        Topic Rank: #{topic_rank}<br>
+                        Date: {current_date}<br>
+                        Time: {current_time_str}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown("### 🏆 Overall Top 5")
+                for i, entry in enumerate(sorted_entries[:5], 1):
+                    if (entry["name"] == player_name and 
+                        entry["score"] == score and 
+                        entry["topic"] == topic):
+                        st.markdown(
+                            f"""**{i}. {entry['name']} ({entry['topic']}): """
+                            f"""{entry['score']} points** ← You"""
+                            f""" ({entry['date']} {entry['time']})"""
+                        )
+                    else:
+                        st.markdown(
+                            f"""{i}. {entry['name']} ({entry['topic']}): """
+                            f"""{entry['score']} points"""
+                            f""" ({entry['date']} {entry['time']})"""
+                        )
+            
+            with col2:
+                st.markdown(f"### 🎯 Top 5 for {topic}")
+                for i, (name, score, date, time) in enumerate(topic_rankings[:5], 1):
+                    if name == player_name:
+                        st.markdown(
+                            f"""**{i}. {name}: {score} points** ← You"""
+                            f""" ({date} {time})"""
+                        )
+                    else:
+                        st.markdown(
+                            f"""{i}. {name}: {score} points"""
+                            f""" ({date} {time})"""
+                        )
+                
+                if topic_rank and topic_rank <= 5:
+                    st.success(
+                        f"🌟 Congratulations! "
+                        f"You are #{topic_rank} on the {topic} leaderboard!"
+                    )
+            
+    except Exception as e:
+        st.error(f"Unable to update leaderboard: {str(e)}")
+
+def display_leaderboards():
+    """Display both overall and topic-specific leaderboards with timestamps"""
+    st.sidebar.markdown("---")
+    
+    # Get fresh data once for both leaderboards
+    sheet = authenticate_google_sheets()
+    current_leaderboard = load_leaderboard(sheet) if sheet else {}
+    
+    # Overall Leaderboard
+    with st.sidebar.expander("📊 Overall Leaderboard", expanded=False):
+        if current_leaderboard:
+            sorted_entries = sorted(
+                current_leaderboard.values(),
+                key=lambda x: (-x["score"], x["date"], x["time"])
+            )
+            
+            for i, entry in enumerate(sorted_entries[:10], 1):
+                st.write(
+                    f"""{i}. {entry['name']} ({entry['topic']}): """
+                    f"""{entry['score']} points"""
+                    f""" - {entry['date']} {entry['time']}"""
+                )
+        else:
+            st.info("Leaderboard temporarily unavailable")
+    
+    # Topic Leaderboard
+    if st.session_state.topic:
+        with st.sidebar.expander(
+            f"🎯 {st.session_state.topic} Leaderboard", 
+            expanded=False
+        ):
+            if current_leaderboard:
+                topic_rankings = get_topic_rankings(current_leaderboard, st.session_state.topic)
+                if topic_rankings:
+                    for i, (name, score, date, time) in enumerate(topic_rankings[:10], 1):
+                        st.write(
+                            f"{i}. {name}: {score} points "
+                            f"- {date} {time}"
+                        )
+                else:
+                    st.info("No scores yet for this topic!")
+            else:
+                st.info("Topic leaderboard temporarily unavailable")
+
+def generate_trivia_question(topic):
+    """Generate a trivia question based on the user-provided topic"""
+    prompt = f"""Create an engaging trivia question specifically about {topic}.
+
+    The question MUST be focused on {topic} and explore this subject in detail.
+    
+    Question requirements:
+    - Highly specific to {topic}
+    - Educational and thought-provoking
+    - Tests understanding of {topic}
+    - Factually accurate and verifiable
+    - Challenging but not obscure
+    
+    Answer requirements:
+    - Four distinct, well-crafted choices
+    - All choices roughly equal length
+    - Wrong answers plausible but definitively incorrect
+    - All answers directly related to {topic}
+    - Each answer includes specific details about {topic}
     
     Format EXACTLY as follows:
-    QUESTION: [Clear, specific question about a verifiable fact]
+    QUESTION: [Clear, specific question about {topic}]
     A) [Detailed answer choice]
     B) [Detailed answer choice]
     C) [Detailed answer choice]
     D) [Detailed answer choice]
     CORRECT: [single letter A, B, C, or D]
     FACT CHECK: [Brief explanation why the correct answer is factually accurate]"""
-    
+
     try:
         response = client.chat.completions.create(
             model="gpt-4-turbo-preview",
             messages=[
-                {"role": "system", "content": "You are a trivia expert creating well-researched, interesting questions. Do not repeat questions and avoid questions of uncommon mammals, reptiles, insects, or other life forms, primary topic matter should be well known, and not obscure topics.  Questions and topic areas should not be repeated.  The questions should vary from challenging questions that are pretty hard or easy but not that easy. All questions should be interesting, educational and fun; Each question should teach something fascinating while being accurate and engaging. Focus on a wide variety of topics.   Do not ask questions about the great wall of china, falmingos or other obscure topics, redundancy and repetition should be avoided."},
+                {"role": "system", "content": f"You are a trivia expert specializing in {topic}. Generate challenging, educational questions that deeply explore this subject matter."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.9,
+            temperature=0.7,
             max_tokens=500
         )
         
@@ -306,7 +811,7 @@ def generate_trivia_question():
                 fact_check = line.replace("FACT CHECK:", "").strip()
         
         if not all([question, len(choices) == 4, correct_answer, fact_check]):
-            return generate_trivia_question()
+            return generate_trivia_question(topic)
             
         return {
             "question": question,
@@ -317,34 +822,19 @@ def generate_trivia_question():
         }
     except Exception as e:
         st.error("Retrying question generation...")
-        time.sleep(1)  # Add a small delay before retrying
-        return generate_trivia_question()
-
-def initialize_session_state():
-    if "questions_asked" not in st.session_state:
-        st.session_state.questions_asked = 0
-    if "total_score" not in st.session_state:
-        st.session_state.total_score = 0
-    if "current_question" not in st.session_state:
-        st.session_state.current_question = None
-    if "game_active" not in st.session_state:
-        st.session_state.game_active = False
-    if "answer_selected" not in st.session_state:
-        st.session_state.answer_selected = False
-    if "feedback" not in st.session_state:
-        st.session_state.feedback = None
-    if "player_name" not in st.session_state:
-        st.session_state.player_name = ""
+        time.sleep(1)
+        return generate_trivia_question(topic)
 
 def calculate_score(time_remaining):
-    grace_period = 5
-    max_time = 60 # 45 - 5 grace period
+    """Calculate score based on remaining time"""
+    max_time = 60
     if time_remaining <= 0:
         return 0
     score = int((time_remaining / max_time) * 200)
     return min(200, max(0, score))
 
 def check_answer(selected_answer):
+    """Check if the answer is correct and calculate score"""
     current_time = time.time()
     time_elapsed = current_time - st.session_state.current_question["start_time"]
     time_remaining = max(0, 65 - time_elapsed)
@@ -371,69 +861,190 @@ def check_answer(selected_answer):
     st.session_state.answer_selected = True
     return time_remaining
 
+
+def reset_game_state():
+    """Reset game state for a new game"""
+    st.session_state.questions_asked = 0
+    st.session_state.total_score = 0
+    st.session_state.current_question = None
+    st.session_state.answer_selected = False
+    st.session_state.feedback = None
+    st.session_state.game_active = False
+    st.session_state.leaderboard_cache = None  # Add this line
+    st.session_state.last_sheet_load = None    # Add this line
+    
 def main():
-    initialize_session_state()
+    # Add auto-refresh script
+    st.markdown("""
+        <script>
+            function refreshPage() {
+                if (!document.hidden) {
+                    window.location.reload();
+                }
+            }
+            setInterval(refreshPage, 1000);
+        </script>
+    """, unsafe_allow_html=True)
     
-    st.markdown('<h1 class="game-title">🧠 GenAI Trivia Challenge 🌟</h1>', unsafe_allow_html=True)
+    # Main title
+    col1, col2 = st.columns([9, 1])
+    with col1:
+        st.markdown('<h1 class="game-title">🧠 GenAI Trivia Challenge 🌟</h1>', unsafe_allow_html=True)
+    with col2:
+        logo = load_and_resize_image("AppImage.png", max_size=(295, 295))
+        if logo:
+            st.image(logo, use_container_width=True)
+
+ 
+  #  st.sidebar.markdown("### Game Quick Start:")
+   
+    # Simplified sidebar with instructions
+    st.sidebar.markdown('<div class="instruction-text">', unsafe_allow_html=True)
+    st.sidebar.markdown("""
+    # 🏆 Game Quick Start: 
+    ### 1. 👤 Enter your name & Triva topic area for the Game, 2. 🔄 Update both using buttons, 3. 🎲 Set questions (5 or 10), 4. 🚀 Press Start Game! to Play, 5. At the End of Game, Press End Game to save your score on leaderboard. 🎯
+    """)
+    st.sidebar.markdown('</div>', unsafe_allow_html=True)
+
+    # Game Controls section
+    st.sidebar.markdown('<div class="game-controls">', unsafe_allow_html=True)
+  #  st.sidebar.markdown('<p class="sidebar-title">🎮 Game Controls</p>', unsafe_allow_html=True)
+    st.sidebar.markdown("# 🎮  Game Controls:")
+
+    # Game length selection
+ #   st.sidebar.markdown("### Game Length:")
+    game_length = st.sidebar.radio(
+        " ",  # Space instead of empty string to ensure consistent spacing
+        options=["5 Questions", "10 Questions"],
+        index=1 if st.session_state.game_length == 10 else 0,
+        horizontal=True,
+        label_visibility="collapsed"  # This hides the label completely
+    )
+    st.session_state.game_length = 10 if "10" in game_length else 5
     
-    # Add logo to sidebar
-    logo = load_and_resize_image("AppImage.png", width=250)
-    if logo:
-        st.sidebar.image(logo, use_container_width=True)
-    
-    # Sidebar content
-    st.sidebar.title("🎮 Game Controls")
-    st.sidebar.text("Test your knowledge. Race against time (60 seconds per question) to earn more points! Good Luck!🎯")
-    
-    # Player registration and game start
-    if not st.session_state.player_name:
-        st.sidebar.markdown("### 👋 Welcome to Trivia!")
-        st.sidebar.markdown("Enter your name and press the button to start playing!")
-        player_name = st.sidebar.text_input("Enter your name:")
-        if player_name:
-            st.session_state.player_name = player_name
-            
-    if st.session_state.player_name and not st.session_state.game_active:
-        st.sidebar.markdown("### 🎲 Ready to Play?")
-        if st.sidebar.button("Start Trivia Game!", key="start_game", use_container_width=True):
-            st.session_state.game_active = True
-            st.session_state.questions_asked = 0
-            st.session_state.total_score = 0
-            st.session_state.current_question = None
-            st.session_state.answer_selected = False
-            st.session_state.feedback = None
-    
-    # Player stats
+    # Player Input Controls
+    with st.sidebar.container():
+        st.markdown("# Player Settings")
+        
+        # Player name input
+        new_name = st.text_input("Player Name:", 
+                                value=st.session_state.player_name,
+                                key="player_name_input",
+                                help="Required to start the game")
+        
+        # Topic input
+        new_topic = st.text_input("Trivia Topic:", 
+                                 value=st.session_state.topic,
+                                 key="topic_input",
+                                 help="Required to start the game")
+        
+        # Update buttons in two columns
+        col1, col2 = st.sidebar.columns(2)
+        
+        # Update Name button
+        with col1:
+            if st.button("Update Name", use_container_width=True):
+                if new_name.strip():
+                    if st.session_state.game_active and st.session_state.questions_asked > 0:
+                        sheet = authenticate_google_sheets()
+                        update_leaderboard_entry(
+                            sheet,
+                            st.session_state.player_name,
+                            st.session_state.total_score,
+                            st.session_state.topic,
+                            st.session_state.questions_asked,
+                            st.session_state.game_length,
+                            force_write=False  # Cache only
+                        )
+                    st.session_state.player_name = new_name.strip()
+                    st.rerun()
+                else:
+                    st.sidebar.error("Please enter a player name")
+        
+        # Update Topic button
+        with col2:
+            if st.button("Update Topic", use_container_width=True):
+                if new_topic.strip():
+                    if st.session_state.game_active and st.session_state.questions_asked > 0:
+                        sheet = authenticate_google_sheets()
+                        update_leaderboard_entry(
+                            sheet,
+                            st.session_state.player_name,
+                            st.session_state.total_score,
+                            st.session_state.topic,
+                            st.session_state.questions_asked,
+                            st.session_state.game_length,
+                            force_write=False  # Cache only
+                        )
+                    st.session_state.topic = new_topic.strip()
+                    st.session_state.current_question = None
+                    st.rerun()
+                else:
+                    st.sidebar.error("Please enter a topic")
+
+    # Game Control Buttons
+ #  st.sidebar.markdown("### Game Controls")
+    if not st.session_state.game_active:
+        if st.sidebar.button("Start Game", use_container_width=True, type="primary"):
+            if st.session_state.player_name.strip() and st.session_state.topic.strip():
+                st.session_state.game_active = True
+                reset_game_state()
+                st.session_state.game_active = True
+                st.rerun()
+            else:
+                st.sidebar.error("Please enter both player name and topic to start!")
+    else:
+        # End Game button
+        if st.sidebar.button("End Game", use_container_width=True, type="secondary"):
+            sheet = authenticate_google_sheets()
+            if st.session_state.questions_asked > 0:
+                update_leaderboard_entry(
+                    sheet,
+                    st.session_state.player_name,
+                    st.session_state.total_score,
+                    st.session_state.topic,
+                    st.session_state.questions_asked,
+                    st.session_state.game_length,
+                    force_write=True  # Write to sheet
+                )
+            reset_game_state()
+            st.rerun()
+        
+        # Start New Game button
+        if st.sidebar.button("Start New Game", use_container_width=True, type="primary"):
+            sheet = authenticate_google_sheets()
+            if st.session_state.questions_asked > 0:
+                update_leaderboard_entry(
+                    sheet,
+                    st.session_state.player_name,
+                    st.session_state.total_score,
+                    st.session_state.topic,
+                    st.session_state.questions_asked,
+                    st.session_state.game_length,
+                    force_write=True  # Write to sheet
+                )
+            reset_game_state()
+            st.rerun()
+
+    # Player Stats
     if st.session_state.player_name:
         st.sidebar.markdown(f"""
         <div class="player-info">
         👤 Player: {st.session_state.player_name}<br>
         💫 Total Score: {st.session_state.total_score}<br>
-        📝 Questions: {st.session_state.questions_asked}/10
+        📝 Questions: {st.session_state.questions_asked}/{st.session_state.game_length}<br>
+        🎯 Topic: {st.session_state.topic}
         </div>
         """, unsafe_allow_html=True)
     
-    # Collapsible Leaderboard
-    st.sidebar.markdown("---")
-    with st.sidebar.expander("📊 View Leaderboard", expanded=False):
-        try:
-            sheet = authenticate_google_sheets()
-            if sheet:
-                leaderboard = load_leaderboard(sheet)
-                sorted_leaderboard = sorted(leaderboard.items(), key=lambda x: x[1], reverse=True)
-                for i, (name, score) in enumerate(sorted_leaderboard[:10], 1):
-                    st.write(f"{i}. {name}: {score} points")
-            else:
-                st.info("Leaderboard temporarily unavailable")
-        except Exception:
-            st.info("Leaderboard temporarily unavailable")
-    
-    
+    # Display leaderboards
+    display_leaderboards()
 
-    if st.session_state.game_active and st.session_state.questions_asked < 10:
+    # Main Game Area
+    if st.session_state.game_active and st.session_state.questions_asked < st.session_state.game_length:
         if not st.session_state.current_question:
             with st.spinner("Loading next question..."):
-                st.session_state.current_question = generate_trivia_question()
+                st.session_state.current_question = generate_trivia_question(st.session_state.topic)
                 st.session_state.answer_selected = False
                 st.session_state.feedback = None
         
@@ -443,27 +1054,53 @@ def main():
             time_elapsed = current_time - st.session_state.current_question["start_time"]
             time_remaining = max(0, 65 - time_elapsed)
             
+            timer_class = "timer-warning" if time_remaining < 10 else ""
+            progress_percentage = (time_remaining / 65) * 100
+
+            st.markdown(f"""
+                <div class="timer-container {timer_class}">
+                    <div class="timer-display">
+                        ⏱️ {int(time_remaining)}s
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill" style="width: {progress_percentage}%;"></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            
+            # Auto-submit when time runs out
+            if time_remaining <= 0 and not st.session_state.answer_selected:
+                st.session_state.answer_selected = True
+                st.session_state.feedback = (
+                    f"""⏰ Time's up! The correct answer was {st.session_state.current_question['correct']}.
+                    
+                    {st.session_state.current_question['fact_check']}""",
+                    "error"
+                )
+                st.rerun()
+            
             # Current game stats
             st.markdown(f"""
             <div class="current-stats">
             👤 Player: {st.session_state.player_name} | 
             💫 Score: {st.session_state.total_score} | 
-            📝 Questions Remaining: {10 - st.session_state.questions_asked}
+            📝 Questions: {st.session_state.questions_asked + 1}/{st.session_state.game_length} |
+            🎯 Topic: {st.session_state.topic}
             </div>
             """, unsafe_allow_html=True)
             
             # Question display
             st.markdown(f"""
             <div class="question-display">
-            Question {st.session_state.questions_asked + 1}/10:
+            Question {st.session_state.questions_asked + 1}/{st.session_state.game_length}:
             {st.session_state.current_question["question"]}
             </div>
             """, unsafe_allow_html=True)
             
-            # Create two columns for answer choices
+            # Answer choices in two columns
             col1, col2 = st.columns(2)
             
-            # First two answers (A and B) in left column
+            # First two answers (A and B)
             with col1:
                 for i in range(2):
                     if time_remaining > 0:
@@ -473,7 +1110,7 @@ def main():
                                    use_container_width=True):
                             time_remaining = check_answer(chr(65 + i))
             
-            # Last two answers (C and D) in right column
+            # Last two answers (C and D)
             with col2:
                 for i in range(2, 4):
                     if time_remaining > 0:
@@ -497,61 +1134,48 @@ def main():
                     st.session_state.questions_asked += 1
                     st.session_state.current_question = None
                     st.rerun()
+        
+    elif st.session_state.questions_asked >= st.session_state.game_length:
+        # Display enhanced game over screen with all stats
+        display_game_over(
+            st.session_state.player_name,
+            st.session_state.total_score,
+            st.session_state.topic,
+            st.session_state.questions_asked,
+            st.session_state.game_length
+        )
     
-    elif st.session_state.questions_asked >= 10:
-        # Game Over
-        st.markdown(f"""
-        <div class="response-area">
-        🎉 Game Over!
-        Final Score: {st.session_state.total_score}
-        Thanks for playing, {st.session_state.player_name}!
+    # Footer section
+    st.markdown("---")
+    st.markdown("""
+    <div class="footer-section">
+        <div class="footer-content">
+            <span style="font-size: 1.2rem; font-weight: 600;">
+                GenAI Trivia Challenge
+            </span>
+            <br>
+            <span style="font-size: 1rem;">
+                Designed by 
+                <a href="https://www.linkedin.com/in/lindsayhiebert/" target="_blank" 
+                   style="text-decoration: none; color: #1E88E5;">
+                   Lindsay Hiebert
+                </a>
+            </span>
         </div>
-        """, unsafe_allow_html=True)
-        
-        # Update leaderboard
-        try:
-            sheet = authenticate_google_sheets()
-            leaderboard = load_leaderboard(sheet)
-            if st.session_state.player_name not in leaderboard or st.session_state.total_score > leaderboard[st.session_state.player_name]:
-                leaderboard[st.session_state.player_name] = st.session_state.total_score
-                save_leaderboard(sheet, leaderboard)
-        except Exception as e:
-            st.error("Unable to update leaderboard")
-        
-        if st.button("Play Again", type="primary", use_container_width=True):
-            st.session_state.clear()
-            st.rerun()
-    
-    # Custom footer with image and LinkedIn link
-    
-    # Custom footer with image and LinkedIn link
-    st.markdown("---")  # Horizontal line first
-
-    # Custom CSS for the footer text
-    footer_text = """
-    <div style="text-align: center; padding: 10px;">
-        <span style="font-size: 1.2rem; font-weight: 600;">
-            GenAI Trivia Challenge, designed by 
-            <a href="https://www.linkedin.com/in/lindsayhiebert/" target="_blank" 
-               style="text-decoration: none; color: #1E88E5;">
-               Lindsay Hiebert
-            </a>
-        </span>
     </div>
-    """
-    st.markdown(footer_text, unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-    # Footer image with custom styling
-    footer_img = load_and_resize_image("FooterImage.png", width=800)  # Wider width
+    # Footer image
+    footer_img = load_and_resize_image("FooterImage.png", width=800)
     if footer_img:
-        # Calculate height to make image narrower while maintaining aspect ratio
-        aspect_ratio = 0.02   # Adjust this value to make image taller or shorter
-        new_height = int(800 * aspect_ratio)  # Height based on width
+        aspect_ratio = 0.02
+        new_height = int(800 * aspect_ratio)
         from PIL import Image
         resized_img = footer_img.resize((1200, new_height), Image.Resampling.LANCZOS)
-        st.image(resized_img, use_container_width=True)  # Make image stretch to container width
-        
-    st.markdown("---")  # Horizontal line
-
+        st.image(resized_img, use_container_width=True)
+    
+    st.markdown("---")
+    
+    
 if __name__ == "__main__":
     main()
