@@ -1,19 +1,75 @@
 # 🧠 GenAI Trivia Challenge
 
-An engaging trivia game powered by OpenAI's GPT-4 that tests your knowledge across various topics while racing against time!
+An advanced trivia game powered by OpenAI's GPT-4 that generates unique, challenging questions while preventing duplicates and ensuring high-quality content. Test your knowledge across any topic while racing against time!
 
 [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://openaitriviaapp.streamlit.app)
 
-## Features
+## ✨ Enhanced Features
 
-- **Dynamic Question Generation**: Leverages GPT-4 to create unique, engaging, and factually accurate questions
-- **Real-time Scoring**: Race against time - faster answers earn more points!
-- **Interactive UI**: Clean, responsive interface with instant feedback
-- **Global Leaderboard**: Compete with players worldwide and track high scores
-- **Varied Topics**: Questions span across multiple categories, ensuring engaging gameplay
-- **Educational Value**: Learn interesting facts with detailed explanations for each answer
+- **Smart Question Generation**: 
+  - Leverages GPT-4 for creating unique, engaging, and factually accurate questions
+  - Advanced validation ensures all answer choices are distinct and meaningful
+  - Question caching prevents duplicates during gameplay sessions
+  - Improved fact-checking and answer verification
 
-## Installation
+- **Flexible Game Modes**:
+  - Choose between 5 or 10 question games
+  - Select any topic for customized trivia experiences
+  - Questions adapt to your chosen topic with domain-specific expertise
+
+- **Advanced Scoring System**:
+  - Real-time scoring based on answer speed
+  - Timer with visual countdown
+  - Progress tracking throughout the game
+  - Detailed end-game statistics
+
+- **Enhanced User Interface**:
+  - Clean, responsive design with intuitive controls
+  - Visual timer with progress bar
+  - Instant feedback with detailed explanations
+  - Mobile-friendly layout
+
+- **Comprehensive Leaderboard System**:
+  - Global rankings across all topics
+  - Topic-specific leaderboards
+  - Historical score tracking
+  - Detailed player statistics
+
+- **Session Management**:
+  - Question caching across games
+  - Persistent player statistics
+  - Option to reset cache and start fresh
+  - Seamless game transitions
+
+## 🚀 Quick Start
+
+1. Visit [OpenAI Trivia App](https://openaitriviaapp.streamlit.app/)
+2. Enter your name and choose a topic
+3. Select game length (5 or 10 questions)
+4. Start playing and race against time!
+5. Learn from detailed explanations after each answer
+
+## 🛠️ Technical Features
+
+- **Question Generation Engine**:
+  - Advanced prompt engineering for consistent quality
+  - Multiple validation layers for answer uniqueness
+  - Sophisticated caching mechanism
+  - Optimized API usage
+
+- **Performance Optimizations**:
+  - Efficient caching strategies
+  - Streamlined data management
+  - Response validation and error handling
+  - Rate limiting and API optimization
+
+- **Data Management**:
+  - Secure Google Sheets integration
+  - Efficient leaderboard caching
+  - Real-time score updates
+  - Data persistence across sessions
+
+## 💻 Installation
 
 1. Clone the repository:
 ```bash
@@ -32,65 +88,81 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-## Configuration
+## ⚙️ Configuration
 
-1. Create a `.env` file using the template:
+1. Create a `.env` file:
 ```bash
 cp .env.template .env
 ```
 
-2. Add your OpenAI API key to the `.env` file:
+2. Configure your API keys:
 ```env
 OPENAI_API_KEY=your_openai_api_key
 ```
 
 3. Set up Google Sheets integration:
-   - Place your OAuth JSON file in the project root
-   - Ensure the filename matches the one in the code
-   - Keep this file secure and never commit it to version control
+   - Add your OAuth credentials JSON file
+   - Configure sheet access permissions
+   - Update sheet URL in settings
 
-## Usage
+## 🔒 Security
 
-1. Run locally:
-```bash
-streamlit run app.py
-```
+- Secure API key management
+- Protected OAuth credentials
+- Rate limiting implementation
+- Data validation and sanitization
 
-2. Enter your name to begin
-3. Answer questions before time runs out
-4. Get instant feedback and explanations
-5. Track your score on the global leaderboard
+## 🚀 Deployment
 
-## Development
+The app is deployed on Streamlit Cloud and automatically syncs with the GitHub repository:
 
-Built with:
-- Streamlit for the web interface
-- OpenAI's GPT-4 for question generation
-- Google Sheets API for leaderboard management
-- Python's dotenv for environment management
+1. Main App: [https://openaitriviaapp.streamlit.app/](https://openaitriviaapp.streamlit.app/)
+2. Source Code: [https://github.com/lhiebert01/OpenAITriviaApp](https://github.com/lhiebert01/OpenAITriviaApp)
 
-## Deployment
+## 🧪 Development
 
-The app is deployed on Streamlit Cloud:
+Built with modern technologies:
+- Streamlit for web interface
+- OpenAI's GPT-4 for AI integration
+- Google Sheets API for data management
+- Python for backend logic
 
-1. Push code to GitHub
-2. Connect to Streamlit Cloud
-3. Configure secrets in Streamlit's dashboard:
-   - Add OPENAI_API_KEY
-   - Add Google Sheets credentials
+## 👥 Contributing
 
-## Security
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+4. Follow coding standards
+5. Add tests for new features
 
-- API keys and credentials are managed securely through environment variables
-- Google Sheets OAuth credentials are kept private
-- Sensitive files are excluded from version control
-
-## Credits
-
-Developed by [Lindsay Hiebert](https://www.linkedin.com/in/lindsayhiebert/), combining AI technology with interactive learning.
-
-## License
+## 📝 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## 🔗 Links
+
+- [Live App](https://openaitriviaapp.streamlit.app/)
+- [GitHub Repository](https://github.com/lhiebert01/OpenAITriviaApp)
+- [Developer Profile](https://www.linkedin.com/in/lindsayhiebert/)
+
+## 👤 Author
+
+Developed by [Lindsay Hiebert](https://www.linkedin.com/in/lindsayhiebert/)
+
+## 📄 Changelog
+
+### Latest Updates
+- Added question caching system
+- Implemented duplicate prevention
+- Enhanced answer validation
+- Improved fact-checking
+- Added Reset All functionality
+- Upgraded to GPT-4 for better accuracy
+- Enhanced prompt engineering
+- Improved user interface
+- Added game length options
+- Enhanced leaderboard system
+
+---
 
 © 2024 Lindsay Hiebert. All Rights Reserved.
