@@ -27,271 +27,88 @@ st.set_page_config(
 
 # Custom CSS for styling
 
-# Replace the entire CSS section with this:
 st.markdown("""
     <style>
+    @import url('https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css');
+    
+    /* [All your existing styles remain the same until the footer social section] */
+    
     .main {
         padding: 0.5rem;
     }
     
-    /* Title area with logo */
-    .title-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        margin: 0;
-        padding: 5px 0;
-        width: 100%;
-    }
+    /* [Keep all your existing styles...] */
     
-    .game-title {
-        text-align: center;
-        color: #1E88E5;
-        margin: 0;
-        padding: 0;
-        font-size: 2.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-        white-space: nowrap;
-    }
-    
-    .logo-container {
-        width: 95px !important;  /* Reduced from 75px */
-        height: 95px !important; /* Reduced from 75px */
-        margin: 0 !important;
-        padding: 0 !important;
+    /* Updated Footer Social Section */
+    .footer-social {
         display: flex;
         justify-content: center;
-        align-items: center;
-        flex-shrink: 0;
-    }
-    
-    .logo-container img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-    
-    .instruction-text {
-        font-size: 2.0rem !important;
-        line-height: 1.2 !important;
-        margin: 0 !important;
-        padding: 10px 0 !important;
-    }
-    
-    .current-topic {
-        font-weight: 600;
-        color: #1E88E5;
-        background: rgba(33, 150, 243, 0.1);
-        padding: 2px 8px;
-        border-radius: 4px;
-        margin: 0 4px;
-    }
-    
-    /* Timer styles */
-    .timer-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        padding: 8px;
-        margin: 5px 0;
-        background: rgba(255, 87, 34, 0.05);
-        border-radius: 8px;
-    }
-
-    .timer-display {
-        font-size: 1.2rem;
-        font-weight: bold;
-        color: #FF5722;
-        padding: 5px 10px;
-        border-radius: 4px;
-        min-width: 120px;
-        text-align: center;
-    }
-
-    .progress-bar {
-        flex-grow: 1;
-        height: 8px;
-        background: #e0e0e0;
-        border-radius: 4px;
-        overflow: hidden;
-        max-width: 300px;
-    }
-
-    .progress-bar-fill {
-        height: 100%;
-        background: #4CAF50;
-        transition: width 0.5s ease-out;
-    }
-
-    .timer-warning .timer-display {
-        color: #f44336;
-        animation: pulse 1s infinite;
-    }
-
-    .timer-warning .progress-bar-fill {
-        background: #f44336;
-    }
-
-    @keyframes pulse {
-        0% { opacity: 1; }
-        50% { opacity: 0.5; }
-        100% { opacity: 1; }
-    }
-    
-    /* Column alignment */
-    [data-testid="column"] {
-        align-items: flex-start !important;
-        justify-content: flex-start !important;
-        padding-top: 0 !important;
-        margin-top: 0 !important;
-    }
-    
-    .element-container {
-        margin-top: 0 !important;
-        padding-top: 0 !important;
-    }
-    
-    /* Game controls */
-    .game-controls {
-        margin-top: 0.5rem !important;
-        padding-top: 0.5rem !important;
-        border-top: 1px solid rgba(49, 51, 63, 0.2);
-    }
-    
-    .sidebar .stMarkdown {
-        margin: 0 !important;
-    }
-    
-    .sidebar-title {
-        font-size: 1.1rem !important;
-        font-weight: bold;
-        margin: 0.5rem 0 !important;
-        padding: 0 !important;
-    }
-    
-    /* Buttons */
-    .stButton button {
-        width: 100%;
-        min-height: 60px;
-        margin: 10px 0;
-        padding: 15px;
-        border-radius: 8px;
-        font-size: 16px;
-        text-align: left;
-        transition: all 0.3s ease;
-    }
-    
-    .stButton button:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-    }
-    
-    /* Game interface */
-    .player-info {
-        font-size: 1.2rem;
-        background: rgba(33, 150, 243, 0.1);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 15px 0;
-        border: 1px solid rgba(33, 150, 243, 0.2);
-    }
-
-    .response-area {
-        max-height: 200px;
-        overflow-y: auto;
-        overflow-x: hidden;
-        padding: 20px;
-        border-radius: 10px;
-        background: rgba(76, 175, 80, 0.1);
-        margin: 15px 0;
-        white-space: pre-wrap;
-        word-wrap: break-word;
-        border: 1px solid rgba(76, 175, 80, 0.2);
-        line-height: 1.6;
-    }
-
-    .question-display {
-        font-size: 1.3rem;
-        padding: 10px;
-        background: rgba(33, 150, 243, 0.1);
-        border-radius: 5px;
-        margin: 5px 0;
-        border: 1px solid rgba(33, 150, 243, 0.2);
-    }
-
-    .current-stats {
-        background: rgba(33, 150, 243, 0.05);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 15px 0;
-        text-align: center;
-        font-size: 1.1rem;
-    }
-    
-    /* Game over section */
-    .game-over-section {
-        background: rgba(76, 175, 80, 0.1);
-        padding: 20px;
-        border-radius: 10px;
+        gap: 15px;
         margin: 20px 0;
-        text-align: center;
-        border: 1px solid rgba(76, 175, 80, 0.2);
     }
 
-    .game-over-title {
-        font-size: 2rem;
-        color: #4CAF50;
-        margin-bottom: 15px;
+    .social-button {
+        padding: 8px 15px;
+        border-radius: 20px;
+        text-decoration: none;
+        color: #333;  /* Darker text color */
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .game-over-stats {
+    .social-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .linkedin-button { 
+        background-color: rgba(0, 119, 181, 0.15);
+        color: #0077B5;
+    }
+    .linkedin-button:hover { 
+        background-color: rgba(0, 119, 181, 0.25);
+    }
+
+    .facebook-button { 
+        background-color: rgba(24, 119, 242, 0.15);
+        color: #1877F2;
+    }
+    .facebook-button:hover { 
+        background-color: rgba(24, 119, 242, 0.25);
+    }
+
+    .twitter-button { 
+        background-color: rgba(29, 161, 242, 0.15);
+        color: #1DA1F2;
+    }
+    .twitter-button:hover { 
+        background-color: rgba(29, 161, 242, 0.25);
+    }
+
+    .email-button { 
+        background-color: rgba(234, 67, 53, 0.15);
+        color: #EA4335;
+    }
+    .email-button:hover { 
+        background-color: rgba(234, 67, 53, 0.25);
+    }
+
+    .social-button i {
         font-size: 1.2rem;
-        margin: 10px 0;
-        line-height: 1.6;
+        margin-right: 4px;
     }
     
-    /* Footer */
-    .footer-section {
-        margin-top: 30px;
-        padding: 20px 0;
-        background: rgba(33, 150, 243, 0.05);
-        border-top: 1px solid rgba(33, 150, 243, 0.1);
-    }
-
-    .footer-content {
-        text-align: center;
-        padding: 10px;
-        max-width: 800px;
-        margin: 0 auto;
-    }
-
-    .footer-image {
-        max-width: 100%;
-        height: auto;
-        margin: 10px 0;
-    }
+    /* [Keep rest of your existing styles] */
     
-    /* Additional controls */
-    .sidebar-controls {
-        background: rgba(33, 150, 243, 0.05);
-        padding: 15px;
-        border-radius: 10px;
-        margin: 15px 0;
-    }
-    
-    .control-button {
-        margin: 5px 0;
-    }
-    
-    .required-field {
-        color: #f44336;
-        font-size: 0.8rem;
-        margin-top: 2px;
-    }
     </style>
 """, unsafe_allow_html=True)
+
 
 # Initialize session state
 if 'player_name' not in st.session_state:
@@ -1177,27 +994,51 @@ def main():
             st.session_state.game_length
         )
     
+    
+
     # Footer section
     st.markdown("---")
-    st.markdown("""
-    <div class="footer-section">
-        <div class="footer-content">
-            <span style="font-size: 1.2rem; font-weight: 600;">
-                GenAI Trivia Challenge
-            </span>
-            <br>
-            <span style="font-size: 1rem;">
-                Designed by 
-                <a href="https://www.linkedin.com/in/lindsayhiebert/" target="_blank" 
-                   style="text-decoration: none; color: #1E88E5;">
-                   Lindsay Hiebert
-                </a>
-            </span>
+
+    # Social sharing section
+    app_url = "https://openaitriviaapp.streamlit.app/"
+    share_text = "Check out this awesome AI-powered Trivia Challenge app!"
+
+    st.markdown(f"""
+        <div class="footer-section">
+            <div class="footer-content">
+                <span style="font-size: 1.2rem; font-weight: 600;">
+                    GenAI Trivia Challenge
+                </span>
+                <div class="footer-social">
+                    <a href="https://www.linkedin.com/shareArticle?mini=true&url={app_url}&title={share_text}"
+                    class="social-button linkedin-button" target="_blank">
+                        <i class="fab fa-linkedin"></i> LinkedIn
+                    </a>
+                    <a href="https://www.facebook.com/sharer/sharer.php?u={app_url}"
+                    class="social-button facebook-button" target="_blank">
+                        <i class="fab fa-facebook"></i> Facebook
+                    </a>
+                    <a href="https://twitter.com/intent/tweet?text={share_text}&url={app_url}"
+                    class="social-button twitter-button" target="_blank">
+                        <i class="fab fa-twitter"></i> X/Twitter
+                    </a>
+                    <a href="mailto:?subject=Check out GenAI Trivia Challenge!&body={share_text}%0A%0A{app_url}"
+                    class="social-button email-button">
+                        <i class="fas fa-envelope"></i> Email
+                    </a>
+                </div>
+                <span style="font-size: 1rem;">
+                    Designed by 
+                    <a href="https://www.linkedin.com/in/lindsayhiebert/" target="_blank" 
+                    style="text-decoration: none; color: #1E88E5;">
+                    Lindsay Hiebert
+                    </a>
+                </span>
+            </div>
         </div>
-    </div>
     """, unsafe_allow_html=True)
 
-    # Footer image
+    # Footer image (if you want to keep it)
     footer_img = load_and_resize_image("FooterImage.png", width=800)
     if footer_img:
         aspect_ratio = 0.02
@@ -1205,9 +1046,8 @@ def main():
         from PIL import Image
         resized_img = footer_img.resize((1200, new_height), Image.Resampling.LANCZOS)
         st.image(resized_img, use_container_width=True)
-    
-    st.markdown("---")
-    
+
+    st.markdown("---")    
 #ICONS to use: 
 
 #🎮 Game Controls
