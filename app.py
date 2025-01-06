@@ -320,6 +320,9 @@ if 'last_sheet_load' not in st.session_state:
 # other session state initializations
 if 'sheet_object' not in st.session_state:
     st.session_state.sheet_object = None
+# Add to session state initialization section:
+if 'question_cache' not in st.session_state:
+    st.session_state.question_cache = set()
 
 def load_and_resize_image(image_path, width=None, max_size=None):
     """Load an image and resize it with maximum dimensions"""
@@ -753,77 +756,100 @@ def display_leaderboards():
             else:
                 st.info("Topic leaderboard temporarily unavailable")
 
+
 def generate_trivia_question(topic):
-    """Generate a trivia question based on the user-provided topic"""
-    prompt = f"""Create an engaging trivia question specifically about {topic}.
+    """Generate a unique trivia question based on the topic with improved validation"""
+    
+    prompt = f"""Create a concise but challenging trivia question about {topic}.
 
-    The question MUST be focused on {topic} and explore this subject in detail.
+    Requirements:
+    1. Question must be unique and specific to {topic}
+    2. Length: Question should be 2-4 sentences maximum
+    3. All answer choices must be:
+       - Distinctly different from each other
+       - Similar in length and complexity, and detailed
+       - Plausible but with only one and only one clearly correct answer
+    4. Fact check must be concise (max 3 sentences) and definitively prove the correct answer
     
-    Question requirements:
-    - Highly specific to {topic}
-    - Educational and thought-provoking
-    - Tests understanding of {topic}
-    - Factually accurate and verifiable
-    - Challenging but not obscure
+    CRITICAL: Each answer choice must be meaningfully different from the others.
     
-    Answer requirements:
-    - Four distinct, well-crafted choices
-    - All choices roughly equal length
-    - Wrong answers plausible but definitively incorrect
-    - All answers directly related to {topic}
-    - Each answer includes specific details about {topic}
+    Format:
+    QUESTION: [Concise question about {topic}]
+    A) [Distinct answer]
+    B) [Distinct answer]
+    C) [Distinct answer]
+    D) [Distinct answer]
+    CORRECT: [A, B, C, or D]
+    FACT CHECK: [Brief verification of correct answer]
     
-    Format EXACTLY as follows:
-    QUESTION: [Clear, specific question about {topic}]
-    A) [Detailed answer choice]
-    B) [Detailed answer choice]
-    C) [Detailed answer choice]
-    D) [Detailed answer choice]
-    CORRECT: [single letter A, B, C, or D]
-    FACT CHECK: [Brief explanation why the correct answer is factually accurate]"""
+    The question key must be unique to prevent duplicates."""
 
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4-turbo-preview",
-            messages=[
-                {"role": "system", "content": f"You are a trivia expert specializing in {topic}. Generate challenging, educational questions that deeply explore this subject matter."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7,
-            max_tokens=500
-        )
-        
-        content = response.choices[0].message.content.strip().split("\n")
-        question = None
-        choices = []
-        correct_answer = None
-        fact_check = None
-        
-        for line in content:
-            line = line.strip()
-            if line.startswith("QUESTION:"):
-                question = line.replace("QUESTION:", "").strip()
-            elif line.startswith(("A)", "B)", "C)", "D)")):
-                choices.append(line)
-            elif line.startswith("CORRECT:"):
-                correct_answer = line.replace("CORRECT:", "").strip()
-            elif line.startswith("FACT CHECK:"):
-                fact_check = line.replace("FACT CHECK:", "").strip()
-        
-        if not all([question, len(choices) == 4, correct_answer, fact_check]):
-            return generate_trivia_question(topic)
+    max_attempts = 3
+    for attempt in range(max_attempts):
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o",  # Using full GPT-4 instead of turbo
+                messages=[
+                    {"role": "system", "content": f"You are a {topic} expert creating concise, accurate trivia questions. Focus on interesting but verifiable facts."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.9,  # Increased for more variety
+                max_tokens=650,
+                presence_penalty=0.6,  # Encourage more diverse responses
+                frequency_penalty=0.6  # Discourage repetitive answers
+            )
             
-        return {
-            "question": question,
-            "choices": choices,
-            "correct": correct_answer,
-            "fact_check": fact_check,
-            "start_time": time.time()
-        }
-    except Exception as e:
-        st.error("Retrying question generation...")
-        time.sleep(1)
-        return generate_trivia_question(topic)
+            content = response.choices[0].message.content.strip().split("\n")
+            question = None
+            choices = []
+            correct_answer = None
+            fact_check = None
+            
+            for line in content:
+                line = line.strip()
+                if line.startswith("QUESTION:"):
+                    question = line.replace("QUESTION:", "").strip()
+                elif line.startswith(("A)", "B)", "C)", "D)")):
+                    choices.append(line)
+                elif line.startswith("CORRECT:"):
+                    correct_answer = line.replace("CORRECT:", "").strip()
+                elif line.startswith("FACT CHECK:"):
+                    fact_check = line.replace("FACT CHECK:", "").strip()
+            
+            # Validate response format
+            if not all([question, len(choices) == 4, correct_answer, fact_check]):
+                continue
+                
+            # Create a unique key for the question
+            question_key = f"{topic}:{question}"
+            
+            # Check if question is unique
+            if question_key in st.session_state.question_cache:
+                continue
+                
+            # Validate answer choices are distinct
+            answer_texts = [c.split(")", 1)[1].strip().lower() for c in choices]
+            if len(set(answer_texts)) != 4:
+                continue
+                
+            # Add to cache
+            st.session_state.question_cache.add(question_key)
+            
+            return {
+                "question": question,
+                "choices": choices,
+                "correct": correct_answer,
+                "fact_check": fact_check,
+                "start_time": time.time()
+            }
+        except Exception as e:
+            if attempt == max_attempts - 1:
+                st.error(f"Error generating question: {str(e)}")
+                return None
+            time.sleep(1)
+            continue
+    
+    return None  # If all attempts fail
 
 def calculate_score(time_remaining):
     """Calculate score based on remaining time"""
@@ -861,17 +887,17 @@ def check_answer(selected_answer):
     st.session_state.answer_selected = True
     return time_remaining
 
-
 def reset_game_state():
-    """Reset game state for a new game"""
+    """Reset game state for a new game but preserve question cache"""
     st.session_state.questions_asked = 0
     st.session_state.total_score = 0
     st.session_state.current_question = None
     st.session_state.answer_selected = False
     st.session_state.feedback = None
     st.session_state.game_active = False
-    st.session_state.leaderboard_cache = None  # Add this line
-    st.session_state.last_sheet_load = None    # Add this line
+    st.session_state.leaderboard_cache = None
+    st.session_state.last_sheet_load = None
+    # Note: We do NOT clear question_cache here
     
 def main():
     # Add auto-refresh script
@@ -1026,6 +1052,12 @@ def main():
             reset_game_state()
             st.rerun()
 
+    # Add after the other sidebar game control buttons:
+    if st.sidebar.button("Reset All", use_container_width=True, type="secondary"):
+        st.session_state.question_cache.clear()  # Clear question cache
+        reset_game_state()  # Reset other game state
+        st.rerun()
+
     # Player Stats
     if st.session_state.player_name:
         st.sidebar.markdown(f"""
@@ -1176,6 +1208,25 @@ def main():
     
     st.markdown("---")
     
-    
+#ICONS to use: 
+
+#🎮 Game Controls
+#👤 Player Settings
+#🎲 Game Length
+#🏆 Leaderboard
+#🌟 Top Scores
+#📊 Statistics
+#🎯 Topics
+#🚀 Start Game
+#🔄 Update
+#⏱️ Timer
+#📝 Questions
+#🎯 Topic
+#🏆 Rankings
+#🎉 Game Ove
+#🎯 Topic Leaderboar
+#✨ Special Features
+
+
 if __name__ == "__main__":
     main()
