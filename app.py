@@ -22,8 +22,23 @@ client = OpenAI(api_key=get_openai_key())
 st.set_page_config(
     page_title="🧠 GenAI Trivia Challenge",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
+    menu_items={
+        'Get Help': None,
+        'Report a bug': None,
+        'About': None
+    }
 )
+
+# Hide Streamlit's default header, footer, and menu
+hide_streamlit_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # Custom CSS for styling
 
