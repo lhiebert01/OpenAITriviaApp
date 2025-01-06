@@ -760,7 +760,7 @@ def main():
     st.sidebar.markdown('<div class="instruction-text">', unsafe_allow_html=True)
     st.sidebar.markdown("""
     # 🏆 Game Quick Start: 
-    ### 1. 👤 Enter your name & Triva topic area for the Game, 2. 🔄 Update both using buttons, 3. 🎲 Set questions (5 or 10), 4. 🚀 Press Start Game! to Play, 5. At the End of Game, Press End Game to save your score on leaderboard. 🎯
+    ### 1. 👤 Enter your name & custom Trivia topic, 2. 🔄 Update BOTH using buttons, 3. 🎲 Set questions (5 or 10), 4. 🚀 Press Start Game! to Play, 5. At the End of Game, Press End Game to save your score on leaderboard. 🎯
     """)
     st.sidebar.markdown('</div>', unsafe_allow_html=True)
 
